@@ -1,0 +1,1657 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Postdoc Onboarding Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&family=Cardo:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: a design-review canvas. Left rail holds the view controls and screen list;
+   the main column shows the screen's annotations above a scaled device frame. */
+:root{
+  --c-bg:#e9ecf0; --c-panel:#ffffff; --c-ink:#1b2230; --c-muted:#566070; --c-line:#d4d9e0;
+  --c-accent:#00356b; --c-accent-ink:#ffffff; --c-sel:#e3ebf5; --c-dot:#cdd3dc;
+  --c-frame:#c6ccd5; --c-frame-bar:#f2f4f7; --c-bezel:#1f242b;
+  --c-shadow:0 1px 2px rgb(16 24 40 / .06), 0 12px 32px rgb(16 24 40 / .12);
+  --f-ui:"Source Sans 3","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --c-bg:#101317; --c-panel:#191d23; --c-ink:#e5e8ed; --c-muted:#9aa4b2; --c-line:#2b313a;
+    --c-accent:#8cbcf4; --c-accent-ink:#0b1626; --c-sel:#1e2a3a; --c-dot:#262c35;
+    --c-frame:#3a414b; --c-frame-bar:#22272e; --c-bezel:#05070a;
+    --c-shadow:0 1px 2px rgb(0 0 0 / .5), 0 14px 36px rgb(0 0 0 / .5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --c-bg:#101317; --c-panel:#191d23; --c-ink:#e5e8ed; --c-muted:#9aa4b2; --c-line:#2b313a;
+  --c-accent:#8cbcf4; --c-accent-ink:#0b1626; --c-sel:#1e2a3a; --c-dot:#262c35;
+  --c-frame:#3a414b; --c-frame-bar:#22272e; --c-bezel:#05070a;
+  --c-shadow:0 1px 2px rgb(0 0 0 / .5), 0 14px 36px rgb(0 0 0 / .5);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--c-bg);color:var(--c-ink);font:15px/1.45 var(--f-ui);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ---------- Review tool chrome ---------- */
+.tool{display:grid;grid-template-columns:268px minmax(0,1fr);min-height:100vh}
+.rail{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--c-panel);border-right:1px solid var(--c-line);padding:22px 16px 28px;display:flex;flex-direction:column;gap:20px}
+.brand-k,.ctl-l,.scr-group,.ann-route,.ann-cols h3,.about-h{font:500 11px/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--c-muted);margin:0}
+.brand-k{margin-bottom:6px}
+.brand-t{font:700 20px/1.2 var(--f-ui);margin:0 0 6px;text-wrap:balance}
+.brand-s{margin:0;color:var(--c-muted);font-size:14px}
+.ctl{display:grid;gap:7px}
+.ctl-hint{margin:0;font-size:13px;color:var(--c-muted)}
+.tseg{display:grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:8px;background:var(--c-bg);border:1px solid var(--c-line)}
+.tseg button{border:0;background:transparent;padding:7px 8px;border-radius:6px;font-weight:600;font-size:14px;color:var(--c-muted);cursor:pointer}
+.tseg button[aria-pressed="true"]{background:var(--c-panel);color:var(--c-ink);box-shadow:0 1px 2px rgb(0 0 0 / .14)}
+.tseg button:focus-visible,.scr-btn:focus-visible,.scr-select select:focus-visible{outline:2px solid var(--c-accent);outline-offset:2px}
+.scr-group{margin:0 0 6px 10px}
+.scr-list{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:2px}
+.scr-btn{width:100%;text-align:left;border:0;background:transparent;padding:7px 10px;border-radius:6px;cursor:pointer;color:var(--c-ink);font-size:15px}
+.scr-btn:hover{background:var(--c-sel)}
+.scr-btn[aria-current="true"]{background:var(--c-accent);color:var(--c-accent-ink);font-weight:600}
+.scr-select{display:none}
+.scr-select select{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--c-line);background:var(--c-panel);color:var(--c-ink);font-size:15px}
+
+.main{min-width:0;padding:24px 28px 48px;display:grid;gap:20px;align-content:start}
+.ann{background:var(--c-panel);border:1px solid var(--c-line);border-radius:10px;padding:18px 22px 20px}
+.ann-route{text-transform:none;letter-spacing:0;font-size:12px;margin-bottom:6px}
+.ann h2{font:700 22px/1.2 var(--f-ui);margin:0 0 4px}
+.ann-purpose{margin:0 0 16px;font-size:16px;max-width:72ch}
+.ann-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 28px}
+.ann-cols h3{margin-bottom:8px}
+.ann-cols ul{margin:0;padding-left:18px;display:grid;gap:5px;font-size:14px}
+.stage{border-radius:10px;padding:24px;background-color:var(--c-bg);background-image:radial-gradient(var(--c-dot) 1px,transparent 1.3px);background-size:16px 16px;border:1px solid var(--c-line);overflow:hidden}
+.holder{position:relative;margin:0 auto}
+.device{position:absolute;top:0;left:0;transform-origin:0 0;background:var(--c-frame-bar);border:1px solid var(--c-frame);border-radius:10px;overflow:hidden;box-shadow:var(--c-shadow)}
+.device.phone{border:8px solid var(--c-bezel);border-radius:30px}
+.dbar{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--c-frame-bar);border-bottom:1px solid var(--c-frame)}
+.dots{display:flex;gap:6px}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--c-frame)}
+.phone .dots{display:none}
+.url{flex:1;min-width:0;font:400 12px/1 var(--f-mono);color:var(--c-muted);background:var(--c-panel);border:1px solid var(--c-line);border-radius:6px;padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.phone .url{text-align:center;border-radius:999px}
+.about{font-size:14px;color:var(--c-muted);max-width:80ch}
+.about-h{margin-bottom:8px}
+.about ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--c-ink);color:var(--c-panel);padding:11px 18px;border-radius:8px;font-size:15px;box-shadow:var(--c-shadow);max-width:calc(100% - 32px);z-index:50}
+@media (max-width:900px){
+  .tool{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--c-line);padding:18px 16px;gap:14px}
+  .scr-nav{display:none}
+  .scr-select{display:grid}
+  .main{padding:16px 16px 40px}
+  .stage{padding:12px}
+}
+
+/* ---------- The app (always rendered as a light Yale page) ---------- */
+.app{
+  --yale-blue:#00356b; --blue-mid:#286dc0; --blue-light:#63aaff;
+  --ink:#222222; --ink-2:#4a4a4a; --warm-gray:#978d85; --line:#dddddd; --wash:#f9f9f9; --paper:#ffffff;
+  --yellow:#ffd55a; --green:#5f712d; --orange:#bd5319;
+  --tint:#eaf1f9; --tint-ink:#00356b;
+  --head-bg:var(--yale-blue); --head-ink:#ffffff; --head-rule:rgb(255 255 255 / .45);
+  --link:var(--blue-mid); --btn:var(--yale-blue); --btn-ink:#ffffff; --btn-line:var(--yale-blue);
+  --ok:var(--green); --prog:var(--blue-mid); --todo:var(--warm-gray); --late:var(--orange); --soon:var(--yellow);
+  --card-line:var(--line); --card-shadow:0 1px 2px rgb(0 0 0 / .04); --field-line:var(--warm-gray);
+  --serif:"Cardo",Georgia,"Times New Roman",serif;
+  --sans:"Source Sans 3","Helvetica Neue",Arial,sans-serif;
+  --r:4px;
+  container:app / inline-size;
+  background:var(--paper);color:var(--ink);font:400 17px/1.55 var(--sans);
+  color-scheme:light;
+}
+.app.wire{
+  --yale-blue:#333333; --blue-mid:#555555; --blue-light:#aaaaaa;
+  --ink:#222222; --ink-2:#555555; --warm-gray:#888888; --line:#bbbbbb; --wash:#f3f3f3;
+  --yellow:#e2e2e2; --green:#444444; --orange:#111111;
+  --tint:#ececec; --tint-ink:#222222;
+  --head-bg:#ffffff; --head-ink:#222222; --head-rule:#999999;
+  --link:#222222; --btn:#e2e2e2; --btn-ink:#222222; --btn-line:#333333;
+  --ok:#444444; --prog:#777777; --todo:#999999; --late:#111111; --soon:#cfcfcf;
+  --card-line:#555555; --card-shadow:none; --field-line:#555555;
+  --serif:"Balsamiq Sans","Comic Sans MS","Chalkboard SE",sans-serif;
+  --sans:"Balsamiq Sans","Comic Sans MS","Chalkboard SE",sans-serif;
+  --r:6px;
+}
+.app p{margin:0 0 12px}
+.app a{color:var(--link);text-underline-offset:3px}
+.app :focus-visible{outline:3px solid var(--blue-mid);outline-offset:2px}
+.app .yh :focus-visible{outline-color:var(--blue-light)}
+.app input,.app select,.app textarea{font:400 17px/1.45 var(--sans);color:var(--ink)}
+.app textarea,.app input[type="text"],.app input[type="email"],.app input[type="date"],.app input[type="time"],.app input[type="url"],.app input[type="search"],.app select{width:100%;border:1.5px solid var(--field-line);border-radius:var(--r);padding:10px 12px;background:var(--paper)}
+.app textarea{resize:vertical;min-height:84px;display:block}
+.app input[type="checkbox"],.app input[type="radio"]{accent-color:var(--yale-blue)}
+
+/* Yale header: signature top-left, rule, site title below */
+.yh{background:var(--head-bg);color:var(--head-ink)}
+.app.wire .yh{border-bottom:2px solid #333}
+.yh-in{max-width:1120px;margin:0 auto;padding:18px 40px 22px}
+.yh-sig{display:inline-block;font:400 19px/1.1 var(--serif);color:inherit !important;text-decoration:none}
+.yh-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-top:1px solid var(--head-rule);margin-top:14px;padding-top:16px}
+.yh-title{font:400 34px/1.1 var(--serif);color:inherit !important;text-decoration:none;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.yh-chip{font:600 12px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--head-rule);border-radius:999px;padding:6px 10px}
+.yh-user{display:flex;align-items:center;gap:10px;font-size:15px;white-space:nowrap}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:600 13px/1 var(--sans);background:var(--head-ink);color:var(--head-bg)}
+.app.wire .av{background:#fff;color:#222;border:1.5px solid #333}
+
+.yn{background:var(--paper);border-bottom:1px solid var(--line)}
+.yn-in{max-width:1120px;margin:0 auto;padding:0 40px}
+.yn-menu{display:none}
+.yn-list{display:flex;flex-wrap:wrap;gap:0 28px;list-style:none;margin:0;padding:0}
+.yn-list a{display:block;padding:14px 0 11px;color:var(--ink);text-decoration:none;font-size:16px;border-bottom:3px solid transparent}
+.yn-list a:hover{border-bottom-color:var(--line)}
+.yn-list a[aria-current="page"]{border-bottom-color:var(--yale-blue);font-weight:600}
+
+.ym{max-width:1120px;margin:0 auto;padding:40px 40px 72px}
+.ph{margin-bottom:28px;max-width:780px}
+.ph h1{font:400 44px/1.1 var(--serif);margin:0 0 10px;color:var(--yale-blue);text-wrap:balance}
+.ph-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;max-width:none}
+.ph-row>div:first-child{max-width:720px}
+.ph-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.app .ph-actions select{width:auto}
+.lede{font-size:19px;line-height:1.5;color:var(--ink-2);margin:0 !important;max-width:65ch}
+.label{font:600 13px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:0 0 8px !important}
+.app h2,.h2{font:400 28px/1.2 var(--serif);margin:0 0 12px;color:var(--ink);text-wrap:balance}
+.app .h3{font:400 23px/1.25 var(--serif);margin:0 0 8px;text-wrap:balance}
+.app .h4{font:700 16px/1.3 var(--sans);margin:0 0 8px}
+.meta{font-size:15px;color:var(--ink-2)}
+.card{background:var(--paper);border:1px solid var(--card-line);border-radius:var(--r);padding:24px;box-shadow:var(--card-shadow);min-width:0}
+.stack{display:grid;gap:20px;align-content:start;min-width:0}
+.actions{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:16px}
+.actions.flush{margin-top:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:var(--r);border:1.5px solid var(--btn-line);background:var(--btn);color:var(--btn-ink) !important;font:600 16px/1.2 var(--sans);text-decoration:none;cursor:pointer}
+.btn:hover{filter:brightness(1.15)}
+.btn.ghost{background:var(--paper);color:var(--btn-line) !important}
+.btn.ghost:hover{background:var(--tint);filter:none}
+.btn.danger{background:var(--paper);color:var(--late) !important;border-color:var(--late)}
+.btn.danger.solid{background:var(--late);color:#fff !important}
+.btn.sm{min-height:36px;padding:6px 12px;font-size:15px}
+.btn.wide{width:100%}
+.linkbtn{background:none;border:0;padding:4px 2px;color:var(--link);font:600 15px/1 var(--sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.linkbtn.danger{color:var(--late)}
+.check-inline{display:inline-flex;gap:8px;align-items:center;font-size:16px;cursor:pointer}
+.check-inline input{width:20px;height:20px;margin:0}
+.cell{display:inline-flex;gap:7px;align-items:center}
+.empty{padding:14px 0}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font:600 13px/1 var(--sans);letter-spacing:.02em;padding:5px 9px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2);background:var(--paper);white-space:nowrap}
+.pill-req{border-color:var(--yale-blue);color:var(--yale-blue)}
+.pill-late{background:var(--late);border-color:var(--late);color:#fff}
+.pill-soon{background:var(--soon);border-color:var(--soon);color:#222}
+.pill-now{background:var(--tint);border-color:var(--yale-blue);color:var(--tint-ink)}
+.pill-pub{border-color:var(--ok);color:var(--ok)}
+.pill-draft{border-style:dashed;border-color:var(--ink-2)}
+
+.si{width:20px;height:20px;flex:none;display:inline-block;vertical-align:-4px}
+.si-done .bg{fill:var(--ok)}
+.si-done .mk{fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.si-prog .ring{fill:none;stroke:var(--prog);stroke-width:1.8}
+.si-prog .half{fill:var(--prog)}
+.si-todo .ring{fill:none;stroke:var(--todo);stroke-width:1.8}
+.si-late .bg{fill:var(--late)}
+.si-late .mk{fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round}
+.si-late .dot{fill:#fff}
+.si-soon .bg{fill:var(--soon)}
+.si-soon .mk{fill:none;stroke:#222;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.privacy{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r);background:var(--wash);font-size:15px;color:var(--ink-2);margin:0 0 20px !important}
+.privacy svg,.banner svg{flex:none;width:18px;height:18px;margin-top:2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.app.wire .privacy{border:1.5px dashed #777}
+
+/* Footer: logo lower-left with room around it */
+.yf{border-top:1px solid var(--line);background:var(--paper)}
+.yf-in{max-width:1120px;margin:0 auto;padding:32px 40px 40px;display:flex;flex-wrap:wrap;gap:20px 56px;align-items:flex-end}
+.yf-logo{font:400 42px/1 var(--serif);color:var(--yale-blue);padding:6px 0}
+.app.wire .yf-logo{width:104px;height:52px;border:1.5px solid #333;font-size:0;background:linear-gradient(to top right,transparent calc(50% - 1px),#999 50%,transparent calc(50% + 1px)),linear-gradient(to bottom right,transparent calc(50% - 1px),#999 50%,transparent calc(50% + 1px))}
+.yf-text{display:grid;gap:6px;font-size:14px;color:var(--ink-2)}
+.yf-text p{margin:0}
+.yf-office{font-weight:600;color:var(--ink)}
+.yf-links{display:flex;flex-wrap:wrap;gap:4px 18px;list-style:none;margin:0;padding:0}
+
+/* Home */
+.home-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:24px;align-items:start}
+.next.is-late{border:2px solid var(--late)}
+.thisweek{background:var(--tint);border-color:var(--tint)}
+.app.wire .thisweek{border-color:#555}
+.prog-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin:0 0 6px !important;font-weight:600}
+.num{font-variant-numeric:tabular-nums;color:var(--ink-2);font-weight:400;font-size:15px}
+.bar{height:8px;border-radius:999px;background:var(--line);overflow:hidden;margin-bottom:14px}
+.bar>span{display:block;height:100%;background:var(--yale-blue);border-radius:inherit}
+.app.wire .bar>span{background:repeating-linear-gradient(-45deg,#444 0 3px,#999 3px 6px)}
+.prog{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:8px}
+.prog li{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:16px}
+.rem{list-style:none;margin:0;padding:0;display:grid}
+.rem li{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:16px}
+.rem li:first-child{border-top:0;padding-top:0}
+.rem-date{font-weight:600;font-size:15px;color:var(--yale-blue);font-variant-numeric:tabular-nums}
+.more{display:inline-block;margin-top:12px;font-weight:600}
+
+/* Checklist */
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;margin-bottom:28px}
+.toolbar .meta{margin:0}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{min-height:40px;padding:8px 15px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--paper);color:var(--ink);font:600 15px/1 var(--sans);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--yale-blue);border-color:var(--yale-blue);color:#fff}
+.app.wire .seg button[aria-pressed="true"]{background:#d4d4d4;color:#222;border-color:#333}
+.phase{margin-bottom:34px}
+.phase-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px;border-bottom:2px solid var(--ink);padding-bottom:8px}
+.phase-head>*{margin:0 !important}
+.group-head{margin:44px 0 22px;padding:20px 24px;background:var(--wash);border-radius:var(--r)}
+.app.wire .group-head{border:1.5px solid #555}
+.group-head p{margin:0}
+.tasks{list-style:none;margin:0;padding:0}
+.task{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding:16px 0;border-bottom:1px solid var(--line)}
+.task input[type="checkbox"]{width:22px;height:22px;margin:3px 0 0;cursor:pointer}
+.task-title{font-weight:600;font-size:18px;cursor:pointer;display:block;line-height:1.35}
+.task.done .task-title{color:var(--ink-2)}
+.task-meta{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:7px 0;font-size:15px}
+.due{color:var(--ink-2)}
+.due-late{color:var(--late);font-weight:600}
+.task-desc{color:var(--ink-2);margin:0 0 6px !important;max-width:68ch}
+.ext{font-weight:600;font-size:15px}
+
+/* First-year plan */
+.plan-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:36px;align-items:start}
+.tl{list-style:none;margin:0;padding:0}
+.tl-item{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);gap:16px;padding-bottom:30px}
+.tl-item::before{content:"";position:absolute;left:15px;top:32px;bottom:0;width:2px;background:var(--line)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:32px;height:32px;display:grid;place-items:center}
+.tl-dot .si{width:28px;height:28px}
+.tl-when{font:600 13px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:6px 0 4px !important}
+.tl-item.future .h3{color:var(--ink-2)}
+.tl-today{display:flex;align-items:center;gap:12px;margin:0 0 26px;color:var(--late);font-weight:700;font-size:15px}
+.tl-today::after{content:"";flex:1;border-top:2px dashed var(--late)}
+.tl-body ul.plain{margin:6px 0 0;padding-left:20px;color:var(--ink-2)}
+.wk{list-style:none;margin:10px 0 0;padding:0}
+.wk li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+.wk li.now{background:var(--tint);margin:0 -12px;padding:11px 12px;border-radius:var(--r);border-top-color:transparent}
+.app.wire .wk li.now{outline:1.5px solid #555}
+.wk input{width:20px;height:20px;margin:2px 0 0;cursor:pointer}
+.wk-t{font-weight:600;cursor:pointer;display:block;line-height:1.35}
+.wk-meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:4px;font-size:15px;color:var(--ink-2)}
+.wk-meta .when{font-variant-numeric:tabular-nums}
+.kv{margin:0;display:grid;gap:14px}
+.kv dt{font-size:14px;color:var(--ink-2)}
+.kv dd{margin:2px 0 0;font-weight:600}
+
+/* Workbook */
+.wb-grid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:32px;align-items:start}
+.wb-mods ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.wb-mod{width:100%;display:grid;grid-template-columns:20px minmax(0,1fr);gap:2px 10px;align-items:center;text-align:left;padding:12px 14px;border:1px solid var(--card-line);border-radius:var(--r);background:var(--paper);cursor:pointer;color:var(--ink)}
+.wb-mod:hover{border-color:var(--yale-blue)}
+.wb-mod[aria-current="true"]{background:var(--tint);border-color:var(--yale-blue);box-shadow:inset 0 0 0 1px var(--yale-blue)}
+.wb-mod-t{font-weight:600;font-size:17px}
+.wb-mod-m{grid-column:2;font-size:14px;color:var(--ink-2)}
+.wb-modhead .meta{margin:0 0 16px !important}
+.wb-modhead h2{margin-bottom:4px}
+.wb-secs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}
+.wb-sec-btn{display:inline-flex;gap:8px;align-items:center;padding:8px 13px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--paper);font:600 15px/1.2 var(--sans);cursor:pointer;color:var(--ink);text-align:left}
+.wb-sec-btn[aria-current="true"]{border-color:var(--yale-blue);background:var(--tint);color:var(--tint-ink)}
+.q{border:0;margin:0 0 24px;padding:0;min-width:0}
+.q-label,.q legend{display:block;font-weight:600;font-size:17px;line-height:1.4;margin-bottom:6px;padding:0}
+.q-cat{display:block;font:600 13px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin-bottom:3px}
+.hint{font-size:15px;color:var(--ink-2);margin:0 0 8px !important}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:7px 12px;border-radius:999px;border:1.5px solid var(--field-line);background:var(--paper);color:var(--ink);font:400 15px/1.2 var(--sans);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--yale-blue);border-color:var(--yale-blue);color:#fff;font-weight:600}
+.chip[aria-pressed="true"]::before{content:"\2713\00a0"}
+.chip:disabled{opacity:.45;cursor:not-allowed}
+.app.wire .chip[aria-pressed="true"]{background:#d4d4d4;color:#222;border-color:#333}
+.chip-group{font:600 13px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:14px 0 8px !important}
+.choices{display:grid;gap:8px}
+.choice{display:flex;gap:10px;align-items:center;padding:11px 14px;border:1.5px solid var(--line);border-radius:var(--r);cursor:pointer;font-size:16px}
+.choice input{width:18px;height:18px;margin:0}
+.wb-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid var(--line);padding-top:16px;margin-top:8px}
+.saved{font-size:15px;color:var(--ink-2)}
+#sec-title:focus{outline:none}
+
+/* IDP builder */
+.idp-grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:32px;align-items:start}
+.idp-secs{list-style:none;margin:0;padding:0;display:grid}
+.idp-secs li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:2px 10px;padding:10px 0;border-top:1px solid var(--line);font-size:16px}
+.idp-secs li:first-child{border-top:0;padding-top:0}
+.idp-secs .t{font-weight:600;line-height:1.35}
+.idp-secs .s{grid-column:2;font-size:14px;color:var(--ink-2)}
+.is-isnt ul{margin:0 0 16px;padding-left:20px;font-size:16px}
+.is-isnt ul:last-child{margin-bottom:0}
+.idp-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.idp-bar p{margin:0}
+.doc-wrap{background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:28px}
+.doc{background:#fff;max-width:720px;margin:0 auto;padding:48px 52px;box-shadow:0 1px 3px rgb(0 0 0 / .12),0 8px 24px rgb(0 0 0 / .06);font-size:16px}
+.app.wire .doc{box-shadow:none;border:1.5px solid #555}
+.doc-kicker{font:600 12px/1.3 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin:0 0 8px !important}
+.app .doc-title{font:400 31px/1.15 var(--serif);color:var(--yale-blue);margin:0 0 18px}
+.doc-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px;margin:0 0 30px;padding:16px 0;border-top:1.5px solid var(--ink);border-bottom:1px solid var(--line)}
+.doc-meta dt,.doc-qa dt{font:600 12px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.doc-meta dd{margin:2px 0 0}
+.doc-sec{margin:0 0 28px}
+.doc-sec h3{font:400 21px/1.25 var(--serif);margin:0 0 4px}
+.doc-q{font-style:italic;color:var(--ink-2);margin:0 0 10px !important;font-size:15px}
+.doc-ans{margin:0;padding-left:20px;display:grid;gap:4px}
+.doc-empty{padding:12px 14px;border:1.5px dashed var(--field-line);border-radius:var(--r);color:var(--ink-2);font-size:15px;margin:0 !important}
+.doc-more{font-size:14px;color:var(--ink-2);margin:8px 0 0 !important}
+.doc-mentor{margin-top:12px;border:1px solid var(--line);border-radius:var(--r);min-height:58px;padding:8px 12px;font-size:13px;color:var(--ink-2)}
+.doc-qa{margin:0;display:grid;gap:12px}
+.doc-qa dd{margin:2px 0 0}
+.sig-lines{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:34px}
+.sig-lines div{border-top:1px solid var(--ink);padding-top:6px;font-size:13px;color:var(--ink-2)}
+
+/* Events */
+.month{font:400 28px/1.2 var(--serif) !important;margin:34px 0 0 !important;padding-bottom:8px;border-bottom:2px solid var(--ink)}
+.month:first-of-type{margin-top:8px !important}
+.events{list-style:none;margin:0;padding:0}
+.ev{display:grid;grid-template-columns:76px minmax(0,1fr);gap:22px;padding:22px 0;border-bottom:1px solid var(--line)}
+.ev-date{display:grid;justify-items:center;align-content:start;padding:10px 0 9px;border-radius:var(--r);background:var(--tint);color:var(--tint-ink);text-align:center}
+.app.wire .ev-date{background:none;border:1.5px solid #555}
+.ev-date .m{font:600 13px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase}
+.ev-date .d{font:400 34px/1.1 var(--serif)}
+.ev-date .w{font-size:13px}
+.ev-body .h3{margin-bottom:4px}
+.ev-foot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+
+/* Resources */
+.res-tools{display:grid;gap:14px;margin-bottom:26px}
+.res-search{max-width:520px}
+.res-search label{display:block;font-weight:600;margin-bottom:6px}
+.res-sec{margin-bottom:30px}
+.res-sec h2{padding-bottom:8px;border-bottom:2px solid var(--ink);margin-bottom:0}
+.res-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px}
+.res-list li{padding:14px 0;border-bottom:1px solid var(--line)}
+.res-name{font-weight:600;font-size:17px}
+.res-list p{margin:2px 0 0;font-size:15px;color:var(--ink-2)}
+.res-host{font-size:14px;color:var(--ink-2)}
+
+/* Settings */
+.set-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start}
+.set-grid .span{grid-column:1/-1}
+.field{display:grid;gap:6px;margin-bottom:18px}
+.field:last-child{margin-bottom:0}
+.field>label{font-weight:600}
+.field .hint{margin:0 !important}
+.err{color:var(--late);font-weight:600;font-size:15px;margin:0 !important}
+.switch-row{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:13px 0;border-top:1px solid var(--line)}
+.switch-row label{cursor:pointer}
+.switch{appearance:none;-webkit-appearance:none;flex:none;width:48px;height:28px;border-radius:999px;margin:0;cursor:pointer;background:radial-gradient(circle at 14px 50%,#fff 9px,transparent 9.5px) var(--warm-gray)}
+.switch:checked{background:radial-gradient(circle at calc(100% - 14px) 50%,#fff 9px,transparent 9.5px) var(--yale-blue)}
+.app.wire .switch{border:1.5px solid #333}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.yes,.no{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:16px}
+.yes li,.no li{position:relative;padding-left:26px}
+.yes li::before,.no li::before{position:absolute;left:0;font-weight:700}
+.yes li::before{content:"\2713";color:var(--ok)}
+.no li::before{content:"\2715";color:var(--late)}
+.confirm{margin-top:16px;padding:16px;border:2px solid var(--late);border-radius:var(--r)}
+.confirm p{margin:0 0 12px}
+
+/* Sign in */
+.signin{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:56px;align-items:start;padding-top:8px}
+.signin-card h1{font:400 40px/1.1 var(--serif);color:var(--yale-blue);margin:0 0 10px}
+.signin-about{padding-top:10px}
+.signin-about ul{margin:0;padding-left:20px;display:grid;gap:8px;color:var(--ink-2)}
+
+/* Staff screens */
+.tiles{list-style:none;margin:0 0 30px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.tile{border:1px solid var(--card-line);border-radius:var(--r);padding:18px 18px 16px;background:var(--paper)}
+.tile p{margin:0}
+.tile-k{font-size:15px;color:var(--ink-2);margin-bottom:6px !important}
+.tile-v{font:400 40px/1 var(--serif);margin-bottom:6px !important;font-variant-numeric:tabular-nums;color:var(--yale-blue)}
+.tile-s{font-size:14px;color:var(--ink-2);margin-bottom:10px !important}
+.tile .bar{margin:0}
+.tile.warn .tile-v{color:var(--late)}
+.filters{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px;align-items:end}
+.filters label{font-size:14px;font-weight:600;display:block;margin-bottom:4px}
+.table-wrap{overflow-x:auto;border:1px solid var(--card-line);border-radius:var(--r)}
+.dt{width:100%;border-collapse:collapse;font-size:15px}
+.dt th,.dt td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap}
+.dt .wrap{white-space:normal;min-width:150px}
+.dt thead th{font:600 12px/1.3 var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);background:var(--wash)}
+.dt tbody th{font-weight:600}
+.dt tbody tr:last-child>*{border-bottom:0}
+.dt tbody tr:hover{background:var(--wash)}
+.sub{display:block;font-weight:400;font-size:13px;color:var(--ink-2)}
+.na{color:var(--ink-2)}
+.tbl-foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;margin-top:10px}
+.tbl-foot p{margin:0}
+.crumb{margin:0 0 12px !important;font-size:15px}
+.banner{display:flex;gap:12px;align-items:flex-start;padding:14px 18px;border-radius:var(--r);background:var(--tint);color:var(--tint-ink);margin-bottom:24px;font-size:16px}
+.app.wire .banner{border:1.5px dashed #555}
+.detail-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;align-items:start}
+.dphase{margin:22px 0 4px !important}
+.dphase:first-of-type{margin-top:8px !important}
+.slist{list-style:none;margin:0;padding:0}
+.srow{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line);font-size:16px}
+.srow .meta{white-space:nowrap}
+.ae-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:28px;align-items:start}
+.row-actions{display:flex;gap:10px}
+.confirm-row td{background:var(--wash);white-space:normal !important}
+.confirm-in{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.form-3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:0 12px}
+.form-2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+
+/* Phone layout, driven by the frame's width */
+@container app (max-width: 760px){
+  .yh-in{padding:12px 16px 14px}
+  .yh-sig{font-size:15px}
+  .yh-row{margin-top:10px;padding-top:10px}
+  .yh-title{font-size:25px;gap:10px}
+  .yh-name{display:none}
+  .av{width:30px;height:30px;font-size:12px}
+  .yn-in{padding:0 16px}
+  .yn-menu{display:flex;width:100%;justify-content:space-between;align-items:center;min-height:50px;background:none;border:0;padding:0;font:600 16px/1 var(--sans);color:var(--ink);cursor:pointer}
+  .yn-menu .cur{color:var(--ink-2);font-weight:400}
+  .yn-list{display:none;flex-direction:column;gap:0;padding-bottom:8px}
+  .yn-list.open{display:flex}
+  .yn-list a{padding:12px 0;border-bottom:1px solid var(--line)}
+  .yn-list a[aria-current="page"]{border-bottom-color:var(--line);color:var(--yale-blue);box-shadow:inset 4px 0 0 var(--yale-blue);padding-left:14px}
+  .ym{padding:24px 16px 48px}
+  .ph h1{font-size:32px}
+  .lede{font-size:17px}
+  .app h2,.h2{font-size:24px}
+  .app .h3{font-size:21px}
+  .card{padding:18px}
+  .home-grid,.plan-grid,.wb-grid,.idp-grid,.detail-grid,.ae-grid,.set-grid,.signin,.two,.sig-lines{grid-template-columns:minmax(0,1fr)}
+  .signin{gap:28px}
+  .res-list{grid-template-columns:minmax(0,1fr)}
+  .tiles{grid-template-columns:1fr 1fr}
+  .tile-v{font-size:32px}
+  .filters{grid-template-columns:1fr 1fr}
+  .filters>:first-child{grid-column:1/-1}
+  .doc{padding:26px 20px}
+  .doc-wrap{padding:10px}
+  .doc-meta{grid-template-columns:minmax(0,1fr)}
+  .ev{grid-template-columns:58px minmax(0,1fr);gap:14px}
+  .ev-date .d{font-size:26px}
+  .wb-mods ul{display:flex;overflow-x:auto;gap:8px;padding-bottom:6px}
+  .wb-mod{min-width:160px}
+  .yf-in{padding:24px 16px 32px}
+  .form-2,.form-3{grid-template-columns:minmax(0,1fr)}
+  .rem li{grid-template-columns:minmax(0,1fr);gap:2px}
+  .wk li.now{margin:0 -8px;padding:11px 8px}
+}
+</style>
+</head>
+<body>
+<div class="tool">
+  <aside class="rail" aria-label="Mockup controls">
+    <div class="brand">
+      <p class="brand-k">Yale OPA · Design review</p>
+      <p class="brand-t">Postdoc Onboarding Mockups</p>
+      <p class="brand-s">Twelve linked screens. Click around inside the frame like it’s the real app.</p>
+    </div>
+    <div class="ctl">
+      <span class="ctl-l" id="l-fi">View</span>
+      <div class="tseg" role="group" aria-labelledby="l-fi">
+        <button type="button" data-fi="wire">Wireframe</button>
+        <button type="button" data-fi="mock">Mockup</button>
+      </div>
+      <p class="ctl-hint">Wireframe shows layout and content. Mockup applies Yale’s visual identity.</p>
+    </div>
+    <div class="ctl">
+      <span class="ctl-l" id="l-dev">Device</span>
+      <div class="tseg" role="group" aria-labelledby="l-dev">
+        <button type="button" data-dev="desktop">Desktop</button>
+        <button type="button" data-dev="phone">Phone</button>
+      </div>
+    </div>
+    <div class="ctl scr-select">
+      <label class="ctl-l" for="scr-select">Screen</label>
+      <select id="scr-select"></select>
+    </div>
+    <nav class="scr-nav" id="scr-nav" aria-label="Screens"></nav>
+  </aside>
+
+  <main class="main">
+    <section class="ann" id="ann"></section>
+    <div class="stage" id="stage">
+      <div class="holder" id="holder">
+        <div class="device" id="device">
+          <div class="dbar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="url" id="url"></span></div>
+          <div id="app" class="app mock"></div>
+        </div>
+      </div>
+    </div>
+    <section class="about">
+      <h2 class="about-h">About these mockups</h2>
+      <ul>
+        <li>Checklist tasks, workbook prompts, the first-year plan, and the IDP worksheet come from the OPA orientation workbook.</li>
+        <li>People, events, and numbers are sample content. “Today” is fixed at Oct 11, 2026.</li>
+        <li>Cardo and Source Sans 3 stand in for the Yale typeface and Mallory, which only load on YaleSites.</li>
+        <li>The “Yale University” signature and footer logo are text stand-ins. The real app should use the official files from the University Printer.</li>
+        <li>Nothing here is saved. Reloading the page resets the sample data.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- Dates ---------- */
+const DAY = 864e5;
+const TODAY = Date.UTC(2026, 9, 11);
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const ymd = s => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y, m-1, d); };
+const isYmd = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+const addD = (t, n) => t + n*DAY;
+const addM = (t, n) => { const d = new Date(t); d.setUTCMonth(d.getUTCMonth() + n); return d.getTime(); };
+const fmt = (t, year) => { const d = new Date(t); return MON[d.getUTCMonth()] + ' ' + d.getUTCDate() + (year ? ', ' + d.getUTCFullYear() : ''); };
+const fmtRange = (a, b) => { const x = new Date(a), y = new Date(b); return x.getUTCMonth() === y.getUTCMonth() ? `${MON[x.getUTCMonth()]} ${x.getUTCDate()}–${y.getUTCDate()}` : `${fmt(a)} – ${fmt(b)}`; };
+const daysBetween = (a, b) => Math.round((b - a) / DAY);
+function nthWorkday(t, n){ let c = 0; for (let d = t, i = 0; i < 30; d += DAY, i++){ const w = new Date(d).getUTCDay(); if (w !== 0 && w !== 6 && ++c === n) return d; } return t; }
+const startT = () => isYmd(S.start) ? ymd(S.start) : ymd('2026-09-01');
+const dayNum = st => Math.floor((TODAY - st) / DAY) + 1;
+const weekNum = st => Math.floor((TODAY - st) / DAY / 7) + 1;
+const weekRange = (st, n) => [addD(st, (n-1)*7), addD(st, n*7 - 1)];
+function tparts(hm){ const [h, m] = hm.split(':').map(Number); return { s: `${h % 12 || 12}:${String(m).padStart(2,'0')}`, ap: h >= 12 ? 'pm' : 'am' }; }
+function trange(a, b){ if (!a) return ''; const x = tparts(a); if (!b) return `${x.s} ${x.ap}`; const y = tparts(b); return x.ap === y.ap ? `${x.s}–${y.s} ${y.ap}` : `${x.s} ${x.ap}–${y.s} ${y.ap}`; }
+
+/* ---------- Content from the OPA workbook ---------- */
+const PHASES = [
+  {id:'day1', title:'First day', group:'all'},
+  {id:'week1', title:'First week', group:'all'},
+  {id:'d30', title:'First 30 days', group:'all'},
+  {id:'i3', title:'First 3 days', group:'intl'},
+  {id:'i30', title:'First 30 days', group:'intl'},
+];
+const TASKS = [
+  {id:'a1', ph:'day1', who:'all', req:true, title:'Complete your I-9 form in Workday', due:st => st, dueText:'On or before your first day', desc:'Fill in your section of the I-9 in Workday.', link:'Workday'},
+  {id:'a2', ph:'day1', who:'all', req:true, title:'Bring your I-9 documents to the I-9 Center', due:st => nthWorkday(st, 3), dueText:'By your third working day', desc:'Bring unexpired documents to the I-9 Center at 221 Whitney Avenue. International scholars: finish the OISS check-in first.', link:'I-9 Center details'},
+  {id:'b1', ph:'week1', who:'all', req:true, title:'Activate your NetID and Yale email', due:st => addD(st, 6), desc:'You can do this once your I-9 is complete.', link:'NetID activation'},
+  {id:'b2', ph:'week1', who:'all', req:true, title:'Get your Yale ID card', due:st => addD(st, 6), desc:'Go to either ID Center: 55 Lock Street or 333 Cedar Street.', link:'ID Center hours'},
+  {id:'b3', ph:'week1', who:'all', req:true, title:'Set up a first meeting with your faculty mentor and business office', due:st => addD(st, 6), desc:'Contact your department’s business office and your faculty mentor.'},
+  {id:'b4', ph:'week1', who:'all', req:true, title:'Complete your required trainings in Workday Learning', due:st => addD(st, 6), desc:'Which trainings you need depends on your role and department.', link:'Workday Learning'},
+  {id:'c1', ph:'d30', who:'all', req:true, title:'Enroll in benefits in Workday', due:st => addD(st, 30), dueText:'Within 30 days of your start date', desc:'Health and vision insurance and your other benefits.', link:'Benefits overview'},
+  {id:'c2', ph:'d30', who:'all', req:true, title:'Check whether your work requires vaccine records', due:st => addD(st, 30), desc:'This depends on your work. Check the vaccine page and ask your department.', link:'Vaccine requirements'},
+  {id:'c3', ph:'d30', who:'all', req:false, title:'Download the LiveSafe app', due:st => addD(st, 30), desc:'Yale’s campus safety app.'},
+  {id:'i1', ph:'i3', who:'j1', req:true, title:'Attend the OISS New Scholar Orientation', due:st => addD(st, 2), desc:'Required for J-1 scholars. All postdocs are welcome to attend.', link:'OISS orientation'},
+  {id:'i2', ph:'i3', who:'j1', req:true, title:'Complete the OISS New Scholar Check-In', due:null, dueText:'Within 72 hours of arriving in the U.S.', desc:'Report your U.S. address and upload your I-94 in OISS Connect, about 4 days before your I-9 appointment. This is online only.', link:'OISS Connect'},
+  {id:'i3', ph:'i30', who:'intl', req:true, title:'Apply for a U.S. Social Security number', due:st => addD(st, 30), desc:'OISS recommends waiting two weeks after your DS-2019 is validated. F-1 OPT scholars can apply up to 30 days before their start date.', link:'SSN guide (OISS)'},
+  {id:'i4', ph:'i30', who:'intl', req:true, title:'Add your SSN through the Employee Service Center', due:st => addD(st, 30), desc:'Do this as soon as your Social Security number arrives.', link:'Employee Service Center'},
+  {id:'i5', ph:'i30', who:'intl', req:true, title:'Register with the International Tax Office and complete the FNIS', due:st => addD(st, 30), dueText:'Within 30 days of starting', desc:'Both are required in your first 30 days.', link:'International Tax Office'},
+];
+const VALUES = ['Well-being','Social justice','Spirituality','Success','Trust','Simplicity','Relationships','Safety','Prestige','Personal development','Learning','Joy','Intellectual challenge','Integrity','Impact','Helping others','Harmony','Gratitude','Fulfilling potential','Family and friends','Excellence','Diversity','Creativity','Compassion','Community','Belonging','Autonomy','Authenticity','Adventure','Achievement'];
+const CULTURE = ['Supportive environment','Alignment with personal values','Professional development','Workload sustainability','Mentoring','Life balance / flexibility','Autonomy / independence','Innovation','Collaboration / teamwork','Growth potential','Clear expectations / role clarity','Resource availability','Feedback culture','Geographic location','Accountability','Fairness / ethical leadership','Inclusive workplace','Fun / humor','Psychological safety'];
+const SKILLS = [
+  {g:'Academic, research & technical', o:['Critical reading','Experimental design and techniques','Data and statistical analysis','Computational or archival methods','Documentation','Responsible conduct of research','Finding new research directions','Conference presentations','Publications']},
+  {g:'Professional & interpersonal', o:['Oral and written communication','Grant writing','Manuscript writing','Mentoring up','Mentoring others','Teamwork','Giving and receiving feedback','Collegiality','Networking']},
+  {g:'Management & leadership', o:['Time management','Prioritization','Project management','Budgeting','Supervision','Delegation','Motivating others']},
+];
+const MODULES = [
+  {id:'reflection', title:'Reflection', blurb:'How your experience so far prepares you for this role.', sections:[
+    {id:'r1', ref:'1.1', title:'Your experience so far', mins:15, when:'At orientation', prompts:[
+      {id:'r1a', label:'Discipline-specific knowledge', q:'How have you developed expertise (coursework, research projects, conferences, workshops)?'},
+      {id:'r1b', label:'Communication skills', q:'How have you improved in presenting, writing, or public speaking?'},
+      {id:'r1c', label:'Collaboration skills', q:'How have you contributed to or led team projects or collaborative work?'},
+      {id:'r1d', label:'Research and teaching skills', q:'What experimental, analytical, or teaching skills have you developed?'},
+      {id:'r1e', label:'Leadership, management & mentorship', q:'How have you mentored others, led projects, or managed resources?'}]}]},
+  {id:'values', title:'Values', blurb:'What drives your work, and the work culture where you thrive.', sections:[
+    {id:'v1', ref:'1.2', title:'Values that drive your work', mins:5, when:'At orientation', prompts:[
+      {id:'v1a', type:'chips', q:'Choose 3–5 values that drive your engagement in your work.', options:VALUES, min:3, max:5}]},
+    {id:'v2', ref:'1.4.1', title:'What helps you thrive', mins:5, when:'At orientation', prompts:[
+      {id:'v2a', type:'chips', q:'Work culture: choose 3–5 priorities that help you thrive.', options:CULTURE, min:3, max:5}]}]},
+  {id:'goals', title:'Role & goals', blurb:'Your projects and what you want to accomplish. Add more detail within 8 weeks.', sections:[
+    {id:'g1', ref:'1.3.1', title:'Your projects', mins:10, prompts:[
+      {id:'g1a', q:'Your main tasks, projects, or research areas, as you understand them at orientation.'},
+      {id:'g1b', q:'Add more detail about your projects.', dueWeek:8},
+      {id:'g1c', q:'Additional projects or service, if any.', optional:true}]},
+    {id:'g2', ref:'1.3.2', title:'Your postdoc goals', mins:10, prompts:[
+      {id:'g2a', q:'What do you plan to accomplish during this postdoc?', hint:'For example: lead an independent project, complete a manuscript, submit grants, develop teaching expertise.'},
+      {id:'g2b', q:'Add more detail about your goals.', dueWeek:8}]}]},
+  {id:'mentorship', title:'Mentorship', blurb:'Set expectations with your mentor and build a mentoring team.', sections:[
+    {id:'m1', ref:'3.1', title:'What you value in mentoring', mins:10, prompts:[
+      {id:'m1a', q:'Which values and actions matter most to you in a mentoring relationship, and why?', hint:'For example: transparency, active listening, flexibility, respect, two-way feedback, career guidance.'}]},
+    {id:'m2', ref:'3.2', title:'Align expectations with your mentor', mins:20, when:'After your first meetings', note:'Discuss these with your mentor and write down what you agree on.', prompts:[
+      {id:'m2a', label:'Meeting structure', q:'How often should we meet, and in what format (in person, Zoom, hybrid)?'},
+      {id:'m2b', label:'Meeting preparation', q:'What preparation is expected for check-ins (agenda, written updates, data, questions)?'},
+      {id:'m2c', label:'Communication norms', q:'Which channels do we use in different situations (email, Slack or Teams, in person), and what response times are expected?'},
+      {id:'m2d', label:'Availability and workload', q:'What are the expectations for being in the office, department, or online, and how does workload change over time?'},
+      {id:'m2e', label:'Feedback exchange', q:'How and when will your mentor give feedback, and how should you give feedback upward?'},
+      {id:'m2f', label:'Decision-making', q:'How are decisions made about project direction, manuscripts, and collaborations?'},
+      {id:'m2g', label:'Conferences and visibility', q:'What are the expectations for conference attendance and contributions (posters, talks, networking)?'},
+      {id:'m2h', label:'Time off', q:'How should time off be requested, planned, and respected? See the Yale postdoc PTO policy.'},
+      {id:'m2i', label:'Authorship and credit', q:'What are the norms for authorship and intellectual contribution?'},
+      {id:'m2j', label:'Anything else', q:'Anything else you want to discuss?', optional:true}]},
+    {id:'m3', ref:'3.2.1', title:'Context for your mentor', mins:5, prompts:[
+      {id:'m3a', q:'Is there anything your mentor should know to support you better?', hint:'Consider outside commitments, work carried over from earlier roles, or mentoring approaches that have or haven’t worked for you.'}]},
+    {id:'m4', ref:'3.6', title:'Skills to build', mins:5, prompts:[
+      {id:'m4a', type:'chips', q:'Choose the skills you want to build or strengthen to meet your goals.', groups:SKILLS}]},
+    {id:'m5', ref:'3.3', title:'Your mentoring needs', mins:15, when:'Around month 3', prompts:[
+      {id:'m5a', type:'chips', q:'Where do you want mentoring support in the next 6 months?', options:['Research skills in my area','Presenting and writing','Collaborating effectively','Grant proposals and funding','Fostering my independence','Networking and visibility','Work–life balance','Aligning expectations','Receiving constructive feedback','Honest, trusting communication','Research confidence','Career confidence','Staying motivated','Belonging in my department','Exploring academic careers','Exploring non-academic careers','Skills for my next step']}]},
+    {id:'m6', ref:'3.5', title:'Crucial conversations', mins:15, prompts:[
+      {id:'m6a', label:'Case 1: time off and burnout', q:'Your mentor rarely takes time off and doesn’t bring up PTO. You’re working without breaks and starting to feel burned out. How might you raise this constructively?'},
+      {id:'m6b', label:'Case 2: aligning expectations', q:'Four months in, your mentor hasn’t asked about your goals, and meetings only cover immediate research needs. How could you “mentor up” to clarify expectations?'}]},
+    {id:'m7', ref:'3.7', title:'Your mentoring team', mins:10, when:'First few months', prompts:[
+      {id:'m7a', q:'Who do you already consider a mentor?'},
+      {id:'m7b', q:'Who could you meet through your faculty mentor, colleagues, conferences, alumni networks, or YPA mentorship programs?'}]}]},
+  {id:'career', title:'Career', blurb:'Exploring is expected at this stage. It isn’t a commitment.', sections:[
+    {id:'c1', ref:'1.4.3', title:'Your career stage', mins:5, prompts:[
+      {id:'c1a', type:'choice', q:'Which stage are you in right now?', options:['Discerning or exploring','Building out career options','Actively pursuing identified options']}]},
+    {id:'c2', ref:'1.4.2', title:'Roles where you’d thrive', mins:15, when:'Around month 3', prompts:[
+      {id:'c2a', q:'Work environments you like or want to avoid (academia, industry, non-profit).'},
+      {id:'c2b', q:'Ways you work best (alone, in teams, leading; in person, remote, hybrid).'},
+      {id:'c2c', q:'Roles or programs you know about in your field or want to explore.'},
+      {id:'c2d', q:'Other important factors for your next step (growth, balance, location, family, health).'}]}]},
+  {id:'wellness', title:'Wellness', blurb:'Boundaries, time management, and your wellness plan.', sections:[
+    {id:'w1', ref:'2.3', title:'Boundaries and time management', mins:20, when:'Within 4 weeks', prompts:[
+      {id:'w1a', q:'Who will regularly ask for your time?'},
+      {id:'w1b', q:'How will you communicate with these groups?'},
+      {id:'w1c', q:'How often will you be online or checking email?'},
+      {id:'w1d', q:'How will you protect time for professional development?', hint:'Approaches to try: time blocking, the Eisenhower Matrix, Pomodoro.'}]},
+    {id:'w2', ref:'2.4', title:'Your wellness plan', mins:15, prompts:[
+      {id:'w2a', q:'What do you want to do or explore to support your emotional wellbeing?', hint:'For example: use the Calm app daily, find a therapist, attend drop-in meditation.'},
+      {id:'w2b', q:'What do you want to do or explore to support your physical wellbeing?', hint:'For example: try the New Haven Road Runners, or walk outside for 10 minutes a day.'},
+      {id:'w2c', q:'How will you hold yourself accountable?', hint:'For example: a monthly 30-minute check-in on your calendar, or an accountability partner.'}]}]},
+  {id:'community', title:'Community', blurb:'Ways to connect with people outside your lab.', sections:[
+    {id:'k1', ref:'4.2', title:'Community and belonging', mins:5, prompts:[
+      {id:'k1a', type:'chips', q:'Choose the ways you want to connect.', options:['Join YPA and attend an event','Join YBPA and attend an event','Join the YPA Slack','Sign up for the OISS newsletter','Try a Social & Affinity Group event','Read YPA’s Welcome to Yale page','Get coffee with someone from orientation','Look up events in Yale Connect','Join the YPA Buddy Program']}]}]},
+];
+const PROMPTS = {}; const SECTION_OF = {};
+MODULES.forEach(m => m.sections.forEach(s => s.prompts.forEach(p => { PROMPTS[p.id] = p; SECTION_OF[p.id] = s; })));
+
+const PLAN_WEEKS = {
+  1:{t:'Wellness: plan what you want to explore', long:'Look over the wellness resources and write down your emotional and physical wellbeing goals.', mins:'1 hour', ref:'2.4', mod:'wellness', sec:'w2'},
+  2:{t:'Community: pick groups and events to try', long:'Choose ways to connect outside your lab, such as YPA, YBPA, or Yale Connect.', mins:'1 hour', ref:'4.2', mod:'community', sec:'k1'},
+  3:{t:'Skills: choose skills and resources to explore', long:'Pick the skills you want to build and the resources that can help.', mins:'1 hour', ref:'3.6', mod:'mentorship', sec:'m4'},
+  4:{t:'Career: choose actions for your career stage', long:'Pick your stage of career exploration and a few first actions.', mins:'1 hour', ref:'1.4.3', mod:'career', sec:'c1'},
+  5:{t:'Add detail to your role and goals', long:'Fill in the “add more detail” parts of your projects and goals.', mins:'30–60 min', ref:'1.3', mod:'goals', sec:'g2'},
+  6:{t:'Boundaries, time management, and a wellness check-in', long:'Fill out the boundary-setting section and look at the time-management resources. Then check in on the wellness goals you set in week 1.', mins:'30–60 min', ref:'2.3', mod:'wellness', sec:'w1'},
+  7:{t:'Community check-in and an event', long:'Think about the groups you’ve tried so far, then sign up for an event.', mins:'30 min', go:'events'},
+  8:{t:'Review your skills and career priorities', long:'Look back at the skills and career steps you chose. Find resources or people for the ones that still need work.', mins:'60–90 min', ref:'3.6', mod:'mentorship', sec:'m4'},
+  9:{t:'Schedule your Initial IDP meeting', long:'Book the meeting with your faculty mentor and fill in IDP sections 1–3.', mins:'30–60 min', go:'idp'},
+  10:{t:'Fill in IDP sections 4–8', long:'The skills, milestones, and career sections of your Initial IDP.', mins:'60–90 min', go:'idp'},
+  11:{t:'Your mentoring needs and mentoring team', long:'Note where you want mentoring support and who else could mentor you.', mins:'30–60 min', ref:'3.3', mod:'mentorship', sec:'m5'},
+  12:{t:'Finalize and share your IDP', long:'Make final changes and send your IDP to your mentor before the meeting.', mins:'60–90 min', go:'idp'},
+};
+const IDP = [
+  {n:1, title:'Goals for your postdoc', q:'For example: an independent project, a research question, a manuscript, a teaching approach.', from:['g2a','g2b'], mod:'goals', sec:'g2'},
+  {n:2, title:'Relevant experiences and skills', q:'Which past academic or professional experiences have led you to these goals?', from:['r1a','r1b','r1c','r1d','r1e'], mod:'reflection', sec:'r1'},
+  {n:3, title:'Tasks, responsibilities, and projects', q:'What are the main tasks or projects you expect to work on?', from:['g1a','g1b','g1c'], mod:'goals', sec:'g1'},
+  {n:4, title:'Skills development', q:'Which skills do you need to acquire or strengthen to meet your goals?', from:['m4a'], mod:'mentorship', sec:'m4'},
+  {n:5, title:'Milestones and progress', q:'Concrete checkpoints, such as data generated, figures drafted, or manuscripts submitted.', field:'milestones'},
+  {n:6, title:'Future career considerations', q:'Which professional contexts or roles are you considering after your postdoc?', from:['c2a','c2b','c2c','c2d'], mod:'career', sec:'c2'},
+  {n:7, title:'Career preparation', q:'Which experiences or skills will help you explore options or compete for your next role?', from:['c1a'], mod:'career', sec:'c1'},
+  {n:8, title:'Additional comments', q:'Other relevant points, personal commitments, outreach, or professional activities.', field:'comments'},
+];
+const CAT = {orientation:'Orientation', career:'Career', wellness:'Wellness', community:'Community', international:'International'};
+const TOPICS = [['start','Getting started'],['intl','Immigration & taxes'],['career','Career'],['teach','Writing & teaching'],['mentor','Mentoring & leadership'],['well','Wellness'],['comm','Community']];
+const RES = [
+  {topic:'start', name:'I-9 Center', host:'Yale HR', desc:'221 Whitney Avenue. Bring unexpired I-9 documents by your third working day.'},
+  {topic:'start', name:'ID Centers', host:'Yale', desc:'55 Lock Street and 333 Cedar Street. Get your Yale ID card in your first week.'},
+  {topic:'start', name:'Workday', host:'Yale HR', desc:'Complete your I-9, enroll in benefits, and take required trainings.'},
+  {topic:'start', name:'Postdoc PTO policy', host:'Office of Postdoctoral Affairs', desc:'How paid time off works for postdoctoral associates and fellows.'},
+  {topic:'start', name:'LiveSafe app', host:'Yale', desc:'Yale’s campus safety app.'},
+  {topic:'intl', name:'OISS Connect', host:'OISS', desc:'Complete your New Scholar Check-In and report address changes.'},
+  {topic:'intl', name:'International Tax Office', host:'Yale', desc:'Register and complete the FNIS within 30 days of starting.'},
+  {topic:'intl', name:'Employee Service Center', host:'Yale HR', desc:'Add your Social Security number to your employee record.'},
+  {topic:'intl', name:'OISS newsletter', host:'OISS', desc:'Events and updates for international students and scholars.'},
+  {topic:'career', name:'Office of Career Strategy', host:'OCS', desc:'Consultations, videos, and a newsletter with workshops and job fairs.'},
+  {topic:'career', name:'Designing Your Career', host:'OCS', desc:'An online tool for planning your next step.'},
+  {topic:'career', name:'The Postdoc Academy', host:'External', desc:'Free courses, including “Succeeding as a Postdoc” and “Building Skills for a Successful Career.”'},
+  {topic:'career', name:'myIDP', host:'External', desc:'Career planning tool for STEM disciplines.'},
+  {topic:'career', name:'ImaginePhD', host:'External', desc:'Career planning tool for the social sciences and humanities.'},
+  {topic:'career', name:'OPA funding page', host:'Office of Postdoctoral Affairs', desc:'Fellowships and grants for postdocs.'},
+  {topic:'teach', name:'Graduate Writing Lab', host:'Poorvu Center', desc:'Writing resources and events. Sign up for the newsletter.'},
+  {topic:'teach', name:'Writing consultations', host:'Poorvu Center', desc:'Get feedback on a draft, including application materials.'},
+  {topic:'teach', name:'Poorvu Center for Teaching and Learning', host:'Poorvu Center', desc:'Teaching events and the postdoc teaching certificate.'},
+  {topic:'teach', name:'English Language Program', host:'Yale', desc:'Classes that start each semester.'},
+  {topic:'teach', name:'Workday Learning', host:'Yale HR', desc:'Courses on many skills, including leadership and management.'},
+  {topic:'mentor', name:'OPA planning resources', host:'Office of Postdoctoral Affairs', desc:'Guides for goal setting, mentoring, and your IDP.'},
+  {topic:'mentor', name:'LMAP', host:'Office of Postdoctoral Affairs', desc:'Online leadership and management program, offered each spring.'},
+  {topic:'mentor', name:'Practicing Leadership', host:'Office of Postdoctoral Affairs', desc:'In-person leadership program, offered each fall.'},
+  {topic:'mentor', name:'YPA Buddy Program', host:'YPA', desc:'Get paired with another postdoc.'},
+  {topic:'well', name:'Optum Support', host:'Yale benefits', desc:'Support for your emotional wellbeing.'},
+  {topic:'well', name:'Onsite counselors', host:'Yale', desc:'Mental health consultations.'},
+  {topic:'well', name:'Talkspace', host:'Yale benefits', desc:'Virtual appointments with a licensed therapist.'},
+  {topic:'well', name:'Calm app', host:'Yale benefits', desc:'Free through Yale.'},
+  {topic:'well', name:'Being Well at Yale', host:'Yale', desc:'Office yoga, drop-in meditation, health sessions, and stress-reduction programs.'},
+  {topic:'well', name:'Payne Whitney Gymnasium', host:'Yale Athletics', desc:'Central campus gym. Monthly fee.'},
+  {topic:'well', name:'YNHH Fitness Center', host:'Yale New Haven Hospital', desc:'Medical campus gym. Monthly fee.'},
+  {topic:'well', name:'Yale Campus Recreation', host:'Yale Athletics', desc:'Sports and fitness classes.'},
+  {topic:'comm', name:'Yale Postdoc Association (YPA)', host:'YPA', desc:'Events, a Slack workspace, and a Welcome to Yale page.'},
+  {topic:'comm', name:'Yale Black Postdoc Association (YBPA)', host:'YBPA', desc:'Community and events for Black postdocs at Yale.'},
+  {topic:'comm', name:'Yale Connect', host:'Yale', desc:'Find groups and events across campus.'},
+  {topic:'comm', name:'Social & Affinity Groups at Yale', host:'Yale', desc:'Events from groups across the university.'},
+];
+const ROWS = [
+  {id:'pr482', name:'Priya Raman', dept:'Molecular Biophysics & Biochemistry', live:true},
+  {id:'do215', name:'Daniel Okafor', dept:'Chemistry', start:'2026-09-01', visa:'j1', c:[2,4,3,5], wb:4, last:'Oct 9'},
+  {id:'mc377', name:'Mei Lin Chen', dept:'Genetics', start:'2026-09-01', visa:'j1', c:[2,3,1,3], wb:1, last:'Sep 28'},
+  {id:'sb104', name:'Samuel Brooks', dept:'Psychology', start:'2026-09-01', visa:'none', c:[2,4,3,0], wb:7, last:'Oct 10'},
+  {id:'ag529', name:'Ana Gutiérrez', dept:'Ecology & Evolutionary Biology', start:'2026-09-15', visa:'opt', c:[2,4,1,1], wb:0, last:'Oct 8'},
+  {id:'jf640', name:'Jonah Feld', dept:'Physics', start:'2026-09-01', visa:'none', c:[2,2,0,0], wb:0, last:'Sep 12'},
+  {id:'ab733', name:'Aisha Bello', dept:'Immunobiology', start:'2026-08-17', visa:'j1', c:[2,4,3,5], wb:3, last:'Today'},
+  {id:'lb318', name:'Lukas Brandt', dept:'Computer Science', start:'2026-10-01', visa:'j1', c:[2,4,0,2], wb:1, last:'Oct 7'},
+  {id:'gw256', name:'Grace Whitman', dept:'Neuroscience', start:'2026-09-01', visa:'none', c:[2,4,2,0], wb:5, last:'Oct 6'},
+  {id:'tr891', name:'Tomás Rivera', dept:'Economics', start:'2026-09-15', visa:'none', c:[2,4,1,0], wb:2, last:'Oct 2'},
+];
+const VISA = {j1:'J-1 scholar', opt:'F-1 OPT', none:'Domestic'};
+const blankForm = () => ({title:'', date:'', start:'', end:'', loc:'', cat:'', host:'Office of Postdoctoral Affairs', desc:'', link:''});
+
+/* ---------- State ---------- */
+const S = {
+  screen:'home', fi:'mock', device:'desktop', menuOpen:false,
+  start:'2026-09-01', visa:'j1', mentor:'Elena Marsh',
+  done:{a1:true,a2:true,b1:true,b2:true,b3:true,b4:true,c1:true,c2:true,i1:true,i2:true,i3:true,i5:true},
+  clFilter:'all',
+  wk:{1:true,2:true,3:true},
+  wb:{mod:'wellness', sec:{reflection:'r1', values:'v1', goals:'g2', mentorship:'m2', career:'c1', wellness:'w1', community:'k1'}},
+  ans:{
+    r1a:'PhD in structural biology. Cryo-EM methods courses, two Gordon conferences, and an EMBO image-processing workshop.',
+    r1b:'Four lab-meeting talks and one conference talk. Two first-author papers. Still nervous with big audiences.',
+    r1c:'Co-led a project with a computational lab and coordinated sample sharing between two sites.',
+    r1d:'Cryo-EM sample prep and data processing. TA for undergraduate biochemistry for two semesters.',
+    r1e:'Mentored two rotation students. Managed microscope scheduling for our group.',
+    v1a:['Learning','Intellectual challenge','Impact','Community','Well-being'],
+    v2a:['Supportive environment','Mentoring','Life balance / flexibility','Collaboration / teamwork','Psychological safety'],
+    g1a:'Membrane transporter structure project. Helping maintain the lab’s data-processing pipeline.',
+    g1b:'Main project: solve the inward-facing state. Side project on lipid interactions with a collaborating lab. Training two new grad students on the microscope.',
+    g2a:'Lead the transporter project. Submit one first-author paper. Apply for a K99 or similar fellowship. Get some teaching experience.',
+    m2a:'Weekly 30-minute one-on-one in person, plus a longer goals check-in once a month.',
+    m2b:'A short written update and agenda in our shared doc the day before.',
+    m2c:'Slack for quick questions, email for anything with a deadline. Replies within a day on weekdays.',
+    m4a:['Grant writing','Manuscript writing','Project management','Mentoring others','Time management'],
+    w2a:'Use the Calm app most mornings. Go to drop-in meditation once a week.',
+    w2b:'Join a running group. Walk to the lab when the weather allows.',
+    w2c:'A 30-minute check-in on my calendar on the first Monday of each month.',
+    k1a:['Join YPA and attend an event','Join the YPA Slack','Get coffee with someone from orientation','Look up events in Yale Connect'],
+  },
+  idp:{milestones:'Dec: first 3D reconstruction of the inward-facing state.\nMar: draft figures for the main paper.\nJun: submit the manuscript and send a fellowship draft to my mentor.', comments:''},
+  evFilter:'all', resQ:'', resTopic:'all',
+  notif:{tasks:true, idp:true, digest:false, lead:'3'},
+  confirmDelete:false, signinSent:false, email:'', emailErr:'',
+  adm:{q:'', dept:'all', start:'all', intl:'all', status:'all'}, pid:'pr482',
+  events:[
+    {id:'e1', title:'Initial IDP: How to Get Started', date:'2026-10-14', start:'12:00', end:'13:00', loc:'Online (Zoom)', cat:'career', host:'Office of Postdoctoral Affairs', desc:'A walkthrough of the Initial IDP worksheet and how to prepare for your 3-month meeting with your mentor.', link:'https://example.com/idp', status:'published'},
+    {id:'e2', title:'Tax Basics for International Scholars', date:'2026-10-15', start:'16:00', end:'17:00', loc:'Online', cat:'international', host:'OISS', desc:'Which tax forms to file and when, for J-1 and F-1 OPT scholars.', link:'https://example.com/tax', status:'published'},
+    {id:'e3', title:'Drop-in Meditation', date:'2026-10-16', start:'12:15', end:'12:45', loc:'Central campus', cat:'wellness', host:'Being Well at Yale', desc:'A 30-minute guided session. No experience needed.', link:'https://example.com/meditation', status:'published'},
+    {id:'e4', title:'YPA Fall Mixer', date:'2026-10-20', start:'17:30', end:'19:30', loc:'Science Hill', cat:'community', host:'Yale Postdoc Association', desc:'Meet postdocs from other departments. Food provided.', link:'https://example.com/mixer', status:'published'},
+    {id:'e5', title:'Practicing Leadership: Leading Without Authority', date:'2026-10-22', start:'15:00', end:'16:30', loc:'Central campus', cat:'career', host:'Office of Postdoctoral Affairs', desc:'Part of OPA’s fall leadership program. Practice moving projects forward when you aren’t the one in charge.', link:'https://example.com/leadership', status:'published'},
+    {id:'e6', title:'Academic Job Search: Research Statements', date:'2026-10-28', start:'12:00', end:'13:00', loc:'Online', cat:'career', host:'Office of Career Strategy', desc:'What search committees look for, with sample statements.', link:'https://example.com/research-statements', status:'published'},
+    {id:'e7', title:'YBPA Community Lunch', date:'2026-11-04', start:'12:00', end:'13:30', loc:'Medical campus', cat:'community', host:'Yale Black Postdoc Association', desc:'Monthly lunch and conversation. All postdocs welcome.', link:'https://example.com/ybpa-lunch', status:'published'},
+    {id:'e8', title:'Winter New Postdoc Orientation', date:'2027-01-14', start:'09:00', end:'12:00', loc:'Online and in person', cat:'orientation', host:'Office of Postdoctoral Affairs', desc:'For postdocs starting in December or January. Covers benefits, the workbook, and the Initial IDP.', link:'https://example.com/orientation', status:'published'},
+    {id:'e9', title:'Spring Career Symposium', date:'2027-03-18', start:'13:00', end:'17:00', loc:'Central campus', cat:'career', host:'Office of Postdoctoral Affairs', desc:'Panels on academic and non-academic careers.', link:'', status:'draft'},
+  ],
+  evForm:{title:'Grant Writing Basics for Postdocs', date:'2026-11-12', start:'12:00', end:'13:30', loc:'Online (Zoom)', cat:'career', host:'Office of Postdoctoral Affairs', desc:'How to plan your first fellowship or grant application, with examples from recent postdocs.', link:'https://example.com/grant-writing'},
+  evErr:{}, editingId:null, confirmEv:null,
+};
+try {
+  const saved = JSON.parse(localStorage.getItem('pdo-mockups-view') || 'null');
+  if (saved && (saved.fi === 'wire' || saved.fi === 'mock')) S.fi = saved.fi;
+  if (saved && (saved.device === 'desktop' || saved.device === 'phone')) S.device = saved.device;
+  else if (window.innerWidth < 700) S.device = 'phone';
+} catch (e) { if (window.innerWidth < 700) S.device = 'phone'; }
+function saveView(){ try { localStorage.setItem('pdo-mockups-view', JSON.stringify({fi:S.fi, device:S.device})); } catch (e) {} }
+
+/* ---------- Derived data ---------- */
+const visible = (t, visa) => t.who === 'all' || (t.who === 'intl' && visa !== 'none') || (t.who === 'j1' && visa === 'j1');
+const visTasks = () => TASKS.filter(t => visible(t, S.visa));
+function taskState(t, st, done){
+  if (done) return 'done';
+  const d = t.due ? t.due(st) : null;
+  if (d != null && d < TODAY) return t.req ? 'late' : 'past';
+  if (d != null && d - TODAY <= 7*DAY) return 'soon';
+  return 'open';
+}
+function answered(p){ const v = S.ans[p.id]; if (Array.isArray(v)) return v.length >= (p.min || 1); return !!(v && String(v).trim()); }
+function secStatus(s){ const req = s.prompts.filter(p => !p.optional); const n = req.filter(answered).length; const any = s.prompts.some(answered); return n === req.length ? 'done' : any ? 'prog' : 'todo'; }
+function modStatus(m){ const st = m.sections.map(secStatus); return st.every(x => x === 'done') ? 'done' : st.some(x => x !== 'todo') ? 'prog' : 'todo'; }
+const STATUS_TEXT = {done:'Done', prog:'In progress', todo:'Not started'};
+function nextTask(){
+  const st = startT();
+  const open = visTasks().filter(t => !S.done[t.id]).map(t => ({t, s:taskState(t, st, false), d:t.due ? t.due(st) : Infinity}));
+  const rank = x => x.s === 'late' ? 0 : x.t.req ? 1 : 2;
+  open.sort((a, b) => rank(a) - rank(b) || a.d - b.d);
+  return open[0] || null;
+}
+function rowData(r){
+  const st = r.live ? startT() : ymd(r.start);
+  const visa = r.live ? S.visa : r.visa;
+  const vis = TASKS.filter(t => visible(t, visa));
+  const groups = [['day1'],['week1'],['d30'],['i3','i30']];
+  let isDone;
+  if (r.live) isDone = id => !!S.done[id];
+  else {
+    const set = new Set();
+    groups.forEach((g, gi) => vis.filter(t => g.includes(t.ph)).slice(0, r.c[gi] || 0).forEach(t => set.add(t.id)));
+    isDone = id => set.has(id);
+  }
+  const cols = groups.map(g => {
+    const ts = vis.filter(t => g.includes(t.ph));
+    if (!ts.length) return null;
+    return {d:ts.filter(t => isDone(t.id)).length, n:ts.length, late:ts.some(t => taskState(t, st, isDone(t.id)) === 'late')};
+  });
+  const mods = r.live ? MODULES.map(modStatus) : MODULES.map((m, i) => i < r.wb ? 'done' : 'todo');
+  return Object.assign({}, r, {st, visa, vis, isDone, cols, mods, wb:mods.filter(x => x === 'done').length, late:cols.some(c => c && c.late), last:r.live ? 'Today' : r.last});
+}
+
+/* ---------- Small pieces ---------- */
+function icon(k){
+  if (k === 'done') return '<svg class="si si-done" viewBox="0 0 20 20" aria-hidden="true"><circle class="bg" cx="10" cy="10" r="9"/><path class="mk" d="M5.8 10.3l2.8 2.8 5.6-6"/></svg>';
+  if (k === 'prog') return '<svg class="si si-prog" viewBox="0 0 20 20" aria-hidden="true"><circle class="ring" cx="10" cy="10" r="8.1"/><path class="half" d="M10 1.9a8.1 8.1 0 0 1 0 16.2z"/></svg>';
+  if (k === 'late') return '<svg class="si si-late" viewBox="0 0 20 20" aria-hidden="true"><circle class="bg" cx="10" cy="10" r="9"/><path class="mk" d="M10 5.2v6"/><circle class="dot" cx="10" cy="14.6" r="1.3"/></svg>';
+  if (k === 'soon') return '<svg class="si si-soon" viewBox="0 0 20 20" aria-hidden="true"><circle class="bg" cx="10" cy="10" r="9"/><path class="mk" d="M10 5.5V10l3 2"/></svg>';
+  return '<svg class="si si-todo" viewBox="0 0 20 20" aria-hidden="true"><circle class="ring" cx="10" cy="10" r="8.1"/></svg>';
+}
+const LOCK = '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="8.5" rx="1.5"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/></svg>';
+const reqPill = t => t.req ? '<span class="pill pill-req">Required</span>' : '<span class="pill">Optional</span>';
+function dueHtml(t, st, s){
+  const d = t.due ? t.due(st) : null;
+  if (s === 'done') return `<span class="due cell">${icon('done')}Done</span>`;
+  if (s === 'late') return `<span class="pill pill-late">Overdue</span><span class="due due-late">Was due ${fmt(d)}</span>`;
+  if (s === 'past') return `<span class="due">Suggested by ${fmt(d)}</span>`;
+  if (s === 'soon'){ const n = daysBetween(TODAY, d); return `<span class="pill pill-soon">${n === 0 ? 'Due today' : `Due in ${n} day${n === 1 ? '' : 's'}`}</span><span class="due">${fmt(d)}</span>`; }
+  if (d == null) return `<span class="due">${t.dueText}</span>`;
+  return `<span class="due">${t.dueText ? `${t.dueText} · ${fmt(d)}` : `Due ${fmt(d)}`}</span>`;
+}
+const goWB = (mod, sec, text) => `<a href="#workbook" data-go="workbook" data-mod="${mod}" data-sec="${sec}">${text}</a>`;
+const ext = text => `<a class="ext" href="#" data-inert>${esc(text)}<span aria-hidden="true"> ↗</span></a>`;
+
+const TABS = [['home','Home'],['checklist','Checklist'],['plan','My first-year plan'],['workbook','Workbook'],['idp','IDP builder'],['events','Events & programs'],['resources','Resources'],['settings','Settings']];
+const ADMIN_TABS = [['admin-overview','Completion overview'],['admin-events','Events']];
+function shell(inner, opts){
+  opts = opts || {};
+  const admin = !!opts.admin, nav = opts.nav !== false;
+  const tabs = admin ? ADMIN_TABS : TABS;
+  const cur = SCREENS[S.screen].tab || S.screen;
+  const curName = (tabs.find(t => t[0] === cur) || ['', ''])[1];
+  const user = admin ? ['JL','Jordan Lee'] : ['PR','Priya Raman'];
+  return `
+  <header class="yh"><div class="yh-in">
+    <a class="yh-sig" href="#" data-inert>Yale University</a>
+    <div class="yh-row">
+      <a class="yh-title" href="#${admin ? 'admin-overview' : 'home'}" data-go="${admin ? 'admin-overview' : (nav ? 'home' : 'signin')}">Postdoc Onboarding${admin ? '<span class="yh-chip">OPA staff</span>' : ''}</a>
+      ${nav ? `<div class="yh-user"><span class="av" aria-hidden="true">${user[0]}</span><span class="yh-name">${user[1]}</span></div>` : ''}
+    </div>
+  </div></header>
+  ${nav ? `<nav class="yn" aria-label="Main"><div class="yn-in">
+    <button type="button" class="yn-menu" id="yn-menu" data-act="menu" aria-expanded="${S.menuOpen}" aria-controls="yn-list"><span>Menu</span><span class="cur">${curName}</span></button>
+    <ul class="yn-list${S.menuOpen ? ' open' : ''}" id="yn-list">${tabs.map(([id, label]) => `<li><a href="#${id}" data-go="${id}"${id === cur ? ' aria-current="page"' : ''}>${label}</a></li>`).join('')}</ul>
+  </div></nav>` : ''}
+  <main class="ym">${inner}</main>
+  <footer class="yf"><div class="yf-in">
+    <a class="yf-logo" href="#" data-inert aria-label="Yale University">Yale</a>
+    <div class="yf-text">
+      <p class="yf-office">Office of Postdoctoral Affairs</p>
+      <ul class="yf-links"><li><a href="#" data-inert>Contact OPA</a></li><li><a href="#" data-inert>Accessibility</a></li><li><a href="#" data-inert>Privacy policy</a></li></ul>
+      <p>© 2026 Yale University. All rights reserved.</p>
+    </div>
+  </div></footer>`;
+}
+
+/* ---------- Screens ---------- */
+function rSignin(){
+  const body = S.signinSent ? `
+    <h1>Check your email</h1>
+    <p>We sent a sign-in link to <strong>${esc(S.email)}</strong>. It works for one hour.</p>
+    <div class="actions"><button type="button" class="btn" data-act="open-link">Open the link (prototype)</button><button type="button" class="linkbtn" data-act="signin-reset">Use a different email</button></div>`
+  : `
+    <h1>Sign in</h1>
+    <p>We’ll email you a link that signs you in. No password needed.</p>
+    <form data-form="signin" novalidate>
+      <div class="field">
+        <label for="f-email">Email address</label>
+        <input type="email" id="f-email" autocomplete="email" placeholder="you@example.com" value="${esc(S.email)}"${S.emailErr ? ' aria-invalid="true" aria-describedby="err-email"' : ''}>
+        <p class="hint">Use the address OPA has on file for you. If your NetID isn’t active yet, that may be a personal email.</p>
+        ${S.emailErr ? `<p class="err" id="err-email">${S.emailErr}</p>` : ''}
+      </div>
+      <button type="submit" class="btn wide">Email me a sign-in link</button>
+    </form>
+    <p class="meta" style="margin:16px 0 0">Trouble signing in? Contact the Office of Postdoctoral Affairs.</p>`;
+  return shell(`<div class="signin">
+    <section class="card signin-card">${body}</section>
+    <section class="signin-about">
+      <h2>Your first year, in one place</h2>
+      <ul>
+        <li>An onboarding checklist with due dates based on your start date</li>
+        <li>The OPA orientation workbook, in short sections</li>
+        <li>An Initial IDP you can export as a PDF</li>
+        <li>Events and resources from across Yale</li>
+      </ul>
+    </section>
+  </div>`, {nav:false});
+}
+
+function rHome(){
+  const st = startT(), dn = dayNum(st), wk = weekNum(st);
+  const vis = visTasks(), done = vis.filter(t => S.done[t.id]).length;
+  const nx = nextTask();
+  const nextHtml = nx ? `
+    <section class="card next${nx.s === 'late' ? ' is-late' : ''}" aria-labelledby="next-h">
+      <p class="label">Next step</p>
+      <h2 class="h3" id="next-h">${nx.t.title}</h2>
+      <div class="task-meta">${reqPill(nx.t)}${dueHtml(nx.t, st, nx.s)}</div>
+      <p class="task-desc">${nx.t.desc}</p>
+      <div class="actions"><button type="button" class="btn" data-act="done" data-id="${nx.t.id}">Mark as done</button><a class="btn ghost" href="#checklist" data-go="checklist">See all tasks</a></div>
+    </section>` : `
+    <section class="card next"><p class="label">Next step</p><h2 class="h3">Your checklist is done</h2><p class="task-desc">Nice work. Keep going with this week’s plan.</p></section>`;
+  let weekHtml = '';
+  if (dn >= 1 && wk <= 12){
+    const w = PLAN_WEEKS[wk], r = weekRange(st, wk);
+    weekHtml = `<section class="card thisweek" aria-labelledby="wk-h">
+      <p class="label">This week · Week ${wk}, ${fmtRange(r[0], r[1])}</p>
+      <h2 class="h3" id="wk-h">${w.t}</h2>
+      <p>${w.long}</p>
+      <p class="meta">Suggested time: ${w.mins}</p>
+      <div class="actions">${w.mod ? `<a class="btn ghost" href="#workbook" data-go="workbook" data-mod="${w.mod}" data-sec="${w.sec}">Open in workbook</a>` : `<a class="btn ghost" href="#${w.go}" data-go="${w.go}">Open ${SCREENS[w.go].name}</a>`}
+      <label class="check-inline"><input type="checkbox" id="wk-home-${wk}" data-act="week" data-id="${wk}"${S.wk[wk] ? ' checked' : ''}> Mark this week done</label></div>
+    </section>`;
+  }
+  const rows = [['First day',['day1']],['First week',['week1']],['First 30 days',['d30']],['International steps',['i3','i30']]].map(([label, phs]) => {
+    const ts = vis.filter(t => phs.includes(t.ph)); if (!ts.length) return '';
+    const d = ts.filter(t => S.done[t.id]).length;
+    const k = d === ts.length ? 'done' : ts.some(t => taskState(t, st, !!S.done[t.id]) === 'late') ? 'late' : d ? 'prog' : 'todo';
+    return `<li>${icon(k)}<span>${label}</span><span class="num">${d} of ${ts.length}</span></li>`;
+  }).join('');
+  const modsDone = MODULES.filter(m => modStatus(m) === 'done').length;
+  const idpDate = addM(st, 3), idpIn = daysBetween(TODAY, idpDate);
+  const rem = [];
+  if (dn >= 1) for (let w = wk + 1; w <= Math.min(12, wk + 2); w++){ if (!S.wk[w]){ const r = weekRange(st, w); rem.push([fmtRange(r[0], r[1]), `Week ${w}: ${PLAN_WEEKS[w].t}`]); } }
+  if ((!answered(PROMPTS.g1b) || !answered(PROMPTS.g2b)) && wk <= 8) rem.push([fmt(weekRange(st, 8)[1]), `Add more detail to your projects and goals (${goWB('goals', 'g2', 'workbook 1.3')})`]);
+  if (idpIn >= 0) rem.push([fmt(idpDate), 'Initial IDP meeting with your mentor']);
+  const evs = S.events.filter(e => e.status === 'published' && ymd(e.date) >= TODAY).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+  return shell(`
+    <div class="ph">
+      <p class="label">${dn >= 1 ? `Week ${wk} · Day ${dn}` : `Starts ${fmt(st, true)}`}</p>
+      <h1>Welcome back, Priya</h1>
+      <p class="lede">${dn >= 1 ? `You started on ${fmt(st, true)}. Here’s what needs your attention.` : 'Here’s how to get ready for your first day.'}</p>
+    </div>
+    <div class="home-grid">
+      <div class="stack">
+        ${nextHtml}
+        ${weekHtml}
+        <section class="card" aria-labelledby="prog-h">
+          <h2 class="h3" id="prog-h">Your progress</h2>
+          <p class="prog-row"><span>Checklist</span><span class="num">${done} of ${vis.length} tasks</span></p>
+          <div class="bar" aria-hidden="true"><span style="width:${Math.round(done / vis.length * 100)}%"></span></div>
+          <ul class="prog">${rows}</ul>
+          <p class="prog-row"><span>Workbook</span><span class="num">${modsDone} of ${MODULES.length} modules</span></p>
+          <div class="bar" aria-hidden="true"><span style="width:${Math.round(modsDone / MODULES.length * 100)}%"></span></div>
+          <p class="prog-row"><span>Initial IDP</span><span class="num">${idpIn >= 0 ? `Meeting by ${fmt(idpDate)} · in ${idpIn} days` : `Was due ${fmt(idpDate)}`}</span></p>
+          <a class="more" href="#idp" data-go="idp">Open IDP builder</a>
+        </section>
+      </div>
+      <aside class="stack" aria-label="Coming up">
+        <section class="card" aria-labelledby="rem-h">
+          <h2 class="h3" id="rem-h">Coming up</h2>
+          ${rem.length ? `<ul class="rem">${rem.map(r => `<li><span class="rem-date">${r[0]}</span><span>${r[1]}</span></li>`).join('')}</ul>` : '<p class="meta">Nothing scheduled.</p>'}
+          <a class="more" href="#plan" data-go="plan">See your first-year plan</a>
+        </section>
+        <section class="card" aria-labelledby="ev-h">
+          <h2 class="h3" id="ev-h">Upcoming events</h2>
+          <ul class="rem">${evs.map(e => `<li><span class="rem-date">${fmt(ymd(e.date))}</span><span>${esc(e.title)}<span class="sub">${esc(e.host)}</span></span></li>`).join('')}</ul>
+          <a class="more" href="#events" data-go="events">All events</a>
+        </section>
+      </aside>
+    </div>`);
+}
+
+function rChecklist(){
+  const st = startT(), vis = visTasks(), done = vis.filter(t => S.done[t.id]).length;
+  const late = vis.filter(t => taskState(t, st, !!S.done[t.id]) === 'late').length;
+  const f = S.clFilter;
+  const show = t => f === 'all' || (f === 'open' && !S.done[t.id]) || (f === 'req' && t.req);
+  const taskHtml = t => {
+    const d = !!S.done[t.id], s = taskState(t, st, d);
+    return `<li class="task${d ? ' done' : ''}">
+      <input type="checkbox" id="cb-${t.id}" data-act="toggle" data-id="${t.id}"${d ? ' checked' : ''}>
+      <div class="task-body">
+        <label for="cb-${t.id}" class="task-title">${t.title}</label>
+        <div class="task-meta">${reqPill(t)}${dueHtml(t, st, s)}</div>
+        <p class="task-desc">${t.desc}</p>
+        ${t.link ? ext(t.link) : ''}
+      </div></li>`;
+  };
+  const phase = (p, h) => {
+    const ts = vis.filter(t => t.ph === p.id); if (!ts.length) return '';
+    const d = ts.filter(t => S.done[t.id]).length, shown = ts.filter(show);
+    const k = d === ts.length ? 'done' : ts.some(t => taskState(t, st, !!S.done[t.id]) === 'late') ? 'late' : d ? 'prog' : 'todo';
+    return `<section class="phase" aria-labelledby="ph-${p.id}">
+      <div class="phase-head"><${h} id="ph-${p.id}"${h === 'h3' ? ' class="h3"' : ''}>${p.title}</${h}><span class="meta cell">${icon(k)}${d} of ${ts.length} done</span></div>
+      ${shown.length ? `<ul class="tasks">${shown.map(taskHtml).join('')}</ul>` : `<p class="meta empty">${f === 'open' ? 'Everything in this phase is done.' : 'No required tasks in this phase.'}</p>`}
+    </section>`;
+  };
+  const hasIntl = vis.some(t => t.ph === 'i3' || t.ph === 'i30');
+  const intlWhy = S.visa === 'j1' ? 'Shown because your profile says you’re a J-1 scholar.' : 'Shown because your profile says you’re on F-1 OPT. Steps only for J-1 scholars are hidden.';
+  return shell(`
+    <div class="ph"><h1>Onboarding checklist</h1>
+      <p class="lede">${done} of ${vis.length} tasks done. ${late ? `${late} required ${late === 1 ? 'task is' : 'tasks are'} overdue.` : 'Nothing is overdue.'}</p></div>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Show tasks">
+        ${[['all','All tasks'],['open','Still to do'],['req','Required only']].map(([v, l]) => `<button type="button" id="clf-${v}" data-act="clf" data-v="${v}" aria-pressed="${f === v}">${l}</button>`).join('')}
+      </div>
+      <p class="meta">Due dates are based on your start date, ${fmt(st, true)}.</p>
+    </div>
+    ${PHASES.filter(p => p.group === 'all').map(p => phase(p, 'h2')).join('')}
+    ${hasIntl ? `<div class="group-head"><h2>International scholars</h2><p class="meta">${intlWhy} <a href="#settings" data-go="settings">Change this in Settings</a>.</p></div>
+      ${PHASES.filter(p => p.group === 'intl').map(p => phase(p, 'h3')).join('')}` : ''}`);
+}
+
+function rPlan(){
+  const st = startT(), dn = dayNum(st), wk = weekNum(st);
+  const vis = visTasks(), done = vis.filter(t => S.done[t.id]).length;
+  const weekRow = n => {
+    const w = PLAN_WEEKS[n], r = weekRange(st, n), now = dn >= 1 && n === wk, past = r[1] < TODAY, d = !!S.wk[n];
+    const link = w.mod ? goWB(w.mod, w.sec, `Workbook ${w.ref}`) : `<a href="#${w.go}" data-go="${w.go}">${SCREENS[w.go].name}</a>`;
+    return `<li${now ? ' class="now"' : ''}>
+      <input type="checkbox" id="wk-${n}" data-act="week" data-id="${n}"${d ? ' checked' : ''}>
+      <div><label for="wk-${n}" class="wk-t">Week ${n}: ${w.t}</label>
+      <div class="wk-meta"><span class="when">${fmtRange(r[0], r[1])}</span><span>· ${w.mins}</span>${now ? '<span class="pill pill-now">This week</span>' : ''}${past && !d ? '<span class="pill">Still open</span>' : ''}<span>· ${link}</span></div></div>
+    </li>`;
+  };
+  const range = (a, b) => { const out = []; for (let i = a; i <= b; i++) out.push(i); return out; };
+  const stages = [
+    {title:'Orientation', when:'Week 0', start:st, date:fmt(st, true), items:['Complete the orientation survey','Start the reflection exercises in workbook section 1','Attend the IDP introduction session'], fixedDone:true},
+    {title:'Month 1: settle in and explore', when:'Weeks 1–4', weeks:range(1, 4), note:`Block off an hour a week to explore resources. Checklist: ${done} of ${vis.length} tasks done. <a href="#checklist" data-go="checklist">Open checklist</a>`},
+    {title:'Month 2: choose priorities and start engaging', when:'Weeks 5–8', weeks:range(5, 8)},
+    {title:'Month 3: prepare your Initial IDP', when:'Weeks 9–12', weeks:range(9, 12)},
+    {title:'Initial IDP meeting', when:'3 months', at:addM(st, 3), items:['Share your completed Initial IDP with your mentor','Align expectations and roles, and identify resources','Sign the IDP and set recurring check-ins']},
+    {title:'Six-month review', when:'6 months', at:addM(st, 6), items:['Review progress with your mentor','Draft figures or manuscripts, if applicable','Complete initial training','Adjust goals and milestones']},
+    {title:'Nine-month review', when:'9 months', at:addM(st, 9), items:['Review achievements','Submit manuscripts or grants, if applicable','Assess your mentoring needs','Update your IDP for next year']},
+    {title:'One year', when:'12 months', at:addM(st, 12), items:['Look back on your first year with your mentor','Set goals for year two']},
+  ];
+  let html = '', marker = false;
+  const inWeeks = dn >= 1 && wk >= 1 && wk <= 12;
+  stages.forEach(s => {
+    let start, dateLabel, status, body;
+    if (s.weeks){
+      const a = weekRange(st, s.weeks[0]), b = weekRange(st, s.weeks[s.weeks.length - 1]);
+      start = a[0]; dateLabel = `${fmt(a[0])} – ${fmt(b[1])}`;
+      const allDone = s.weeks.every(n => S.wk[n]), cur = inWeeks && s.weeks.includes(wk), past = b[1] < TODAY;
+      status = allDone ? 'done' : (cur || (past && s.weeks.some(n => S.wk[n]))) ? 'prog' : past ? 'late' : 'todo';
+      body = `${s.note ? `<p class="meta">${s.note}</p>` : ''}<ul class="wk">${s.weeks.map(weekRow).join('')}</ul>`;
+    } else {
+      start = s.at != null ? s.at : s.start; dateLabel = s.date || fmt(start, true);
+      status = s.fixedDone && TODAY >= start ? 'done' : start < TODAY ? 'prog' : 'todo';
+      body = `<ul class="plain">${s.items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+    }
+    if (!marker && !inWeeks && start > TODAY){ html += `<li class="tl-today">Today · ${fmt(TODAY)}</li>`; marker = true; }
+    const cls = status === 'done' ? 'done' : status === 'todo' ? 'future' : 'current';
+    html += `<li class="tl-item ${cls}"><div class="tl-dot">${icon(status)}</div><div class="tl-body"><p class="tl-when">${s.when} · ${dateLabel}</p><h2 class="h3">${s.title}</h2>${body}</div></li>`;
+  });
+  const nextMs = stages.filter(s => s.at != null && s.at > TODAY)[0];
+  const openPast = range(1, 12).filter(n => weekRange(st, n)[1] < TODAY && !S.wk[n]).length;
+  return shell(`
+    <div class="ph"><h1>My first-year plan</h1>
+      <p class="lede">Built from the OPA workbook and your start date. About an hour a week gets you ready for your Initial IDP meeting at 3 months.</p></div>
+    <div class="plan-grid">
+      <ol class="tl">${html}</ol>
+      <aside class="stack">
+        <section class="card" aria-labelledby="glance-h"><h2 class="h3" id="glance-h">At a glance</h2>
+          <dl class="kv">
+            <div><dt>Today</dt><dd>${fmt(TODAY)}${dn >= 1 ? ` · Day ${dn}, week ${wk}` : ''}</dd></div>
+            ${nextMs ? `<div><dt>Next milestone</dt><dd>${nextMs.title}<br>${fmt(nextMs.at, true)} · in ${daysBetween(TODAY, nextMs.at)} days</dd></div>` : ''}
+            <div><dt>Earlier weeks still open</dt><dd>${openPast}</dd></div>
+            <div><dt>Start date</dt><dd>${fmt(st, true)} · <a href="#settings" data-go="settings">Change</a></dd></div>
+          </dl>
+        </section>
+        <section class="card"><h2 class="h3">How the plan works</h2><p class="meta">Months 1 and 2 take about an hour a week. In month 3 you fill in your Initial IDP and share it with your mentor before your meeting.</p></section>
+      </aside>
+    </div>`);
+}
+
+function wbMods(cur){
+  return MODULES.map(m => {
+    const k = modStatus(m), n = m.sections.filter(s => secStatus(s) === 'done').length;
+    return `<li><button type="button" class="wb-mod" id="mod-${m.id}" data-act="mod" data-id="${m.id}"${m.id === cur.id ? ' aria-current="true"' : ''}>${icon(k)}<span class="wb-mod-t">${m.title}</span><span class="wb-mod-m">${STATUS_TEXT[k]} · ${n} of ${m.sections.length} section${m.sections.length === 1 ? '' : 's'}</span></button></li>`;
+  }).join('');
+}
+function wbSecs(mod, sec){
+  return mod.sections.map(s => `<button type="button" class="wb-sec-btn" id="secb-${s.id}" data-act="sec" data-id="${s.id}"${s.id === sec.id ? ' aria-current="true"' : ''}>${icon(secStatus(s))}<span>${s.ref} ${s.title}</span></button>`).join('');
+}
+function promptHtml(p){
+  const st = startT();
+  const due = p.dueWeek ? `<p class="hint">Add this within 8 weeks, by ${fmt(weekRange(st, p.dueWeek)[1])}.</p>` : '';
+  const hint = p.hint ? `<p class="hint">${p.hint}</p>` : '';
+  const opt = p.optional ? ' <span class="meta">(optional)</span>' : '';
+  if (p.type === 'chips'){
+    const sel = S.ans[p.id] || [];
+    const full = p.max && sel.length >= p.max;
+    const chip = (o, i) => { const on = sel.includes(o); return `<button type="button" class="chip" id="ch-${p.id}-${i}" data-act="chip" data-p="${p.id}" data-v="${esc(o)}" aria-pressed="${on}"${full && !on ? ' disabled' : ''}>${esc(o)}</button>`; };
+    let i = 0;
+    const body = p.groups ? p.groups.map(g => `<p class="chip-group">${g.g}</p><div class="chips">${g.o.map(o => chip(o, i++)).join('')}</div>`).join('') : `<div class="chips">${p.options.map(o => chip(o, i++)).join('')}</div>`;
+    return `<fieldset class="q"><legend>${p.q}</legend><p class="hint">${sel.length} chosen${p.max ? ` · up to ${p.max}` : ''}</p>${body}</fieldset>`;
+  }
+  if (p.type === 'choice'){
+    return `<fieldset class="q"><legend>${p.q}</legend><div class="choices">${p.options.map((o, i) => `<label class="choice"><input type="radio" id="rd-${p.id}-${i}" name="rd-${p.id}" data-radio="${p.id}" value="${esc(o)}"${S.ans[p.id] === o ? ' checked' : ''}> ${o}</label>`).join('')}</div></fieldset>`;
+  }
+  return `<div class="q"><label class="q-label" for="p-${p.id}">${p.label ? `<span class="q-cat">${p.label}</span>` : ''}${p.q}${opt}</label>${hint}${due}<textarea id="p-${p.id}" data-ans="${p.id}" rows="3" placeholder="Bullet points are fine">${esc(S.ans[p.id] || '')}</textarea></div>`;
+}
+function currentWB(){
+  const mod = MODULES.find(m => m.id === S.wb.mod) || MODULES[0];
+  const sec = mod.sections.find(s => s.id === S.wb.sec[mod.id]) || mod.sections[0];
+  return {mod, sec, si:mod.sections.indexOf(sec)};
+}
+function rWorkbook(){
+  const {mod, sec, si} = currentWB();
+  const prev = mod.sections[si - 1], next = mod.sections[si + 1];
+  return shell(`
+    <div class="ph"><h1>Workbook</h1><p class="lede">The OPA orientation workbook in short sections. Bullet points are enough, and you can come back to any section later.</p></div>
+    <div class="wb-grid">
+      <nav class="wb-mods" aria-label="Workbook modules"><ul id="wb-mods">${wbMods(mod)}</ul></nav>
+      <div class="wb-main">
+        <div class="wb-modhead"><h2>${mod.title}</h2><p class="meta">${mod.blurb}</p></div>
+        <div class="wb-secs" id="wb-secs" role="group" aria-label="${mod.title} sections">${wbSecs(mod, sec)}</div>
+        <section class="card" aria-labelledby="sec-title">
+          <p class="label">Section ${sec.ref} · About ${sec.mins} min${sec.when ? ' · ' + sec.when : ''}</p>
+          <h3 class="h3" id="sec-title" tabindex="-1">${sec.title}</h3>
+          ${sec.note ? `<p class="meta">${sec.note}</p>` : ''}
+          <p class="privacy">${LOCK}<span>Only you can see your answers. OPA staff see only whether this section is done.</span></p>
+          ${sec.prompts.map(promptHtml).join('')}
+          <div class="wb-foot">
+            <span class="saved" id="saved" aria-live="polite">Your answers save automatically.</span>
+            <div class="actions flush">${prev ? `<button type="button" class="btn ghost" data-act="sec" data-id="${prev.id}" data-focus="1">Previous section</button>` : ''}${next ? `<button type="button" class="btn" data-act="sec" data-id="${next.id}" data-focus="1">Next section</button>` : `<button type="button" class="btn" data-act="nextmod">Next module</button>`}</div>
+          </div>
+        </section>
+      </div>
+    </div>`);
+}
+function patchWB(){
+  const ul = $('#wb-mods'), secs = $('#wb-secs'); if (!ul || !secs) return;
+  const {mod, sec} = currentWB();
+  ul.innerHTML = wbMods(mod); secs.innerHTML = wbSecs(mod, sec);
+  const s = $('#saved'); if (s) s.textContent = 'Saved just now.';
+}
+
+function idpItems(sec){
+  return sec.from.filter(pid => answered(PROMPTS[pid])).map(pid => {
+    const p = PROMPTS[pid], v = S.ans[pid];
+    return {label:p.label || (p.dueWeek ? 'More detail' : ''), txt:Array.isArray(v) ? v.join(', ') : String(v).trim()};
+  });
+}
+function idpStatus(sec){
+  if (sec.field) return (S.idp[sec.field] || '').trim() ? 'done' : 'todo';
+  const req = sec.from.filter(pid => !PROMPTS[pid].optional), n = req.filter(pid => answered(PROMPTS[pid])).length;
+  return n === req.length ? 'done' : sec.from.some(pid => answered(PROMPTS[pid])) ? 'prog' : 'todo';
+}
+function rIDP(){
+  const st = startT();
+  const srcName = s => { if (s.field) return 'Write this here'; const m = MODULES.find(x => x.id === s.mod); const sc = m.sections.find(x => x.id === s.sec); return `From ${m.title} › ${sc.title}`; };
+  const filled = IDP.filter(s => idpStatus(s) !== 'todo').length;
+  const docSec = s => {
+    let body;
+    if (s.field) body = `<label class="sr-only" for="idp-${s.field}">${s.title}</label><textarea id="idp-${s.field}" data-idp="${s.field}" rows="4" placeholder="This part isn’t in the workbook. Write it here.">${esc(S.idp[s.field] || '')}</textarea>`;
+    else {
+      const items = idpItems(s), m = MODULES.find(x => x.id === s.mod), sc = m.sections.find(x => x.id === s.sec);
+      body = items.length
+        ? `<ul class="doc-ans">${items.map(i => `<li>${i.label ? `<strong>${esc(i.label)}:</strong> ` : ''}${esc(i.txt)}</li>`).join('')}</ul>${idpStatus(s) === 'prog' ? `<p class="doc-more">Some prompts aren’t answered yet. ${goWB(s.mod, s.sec, `Finish ${m.title} › ${sc.title}`)}</p>` : ''}`
+        : `<p class="doc-empty">Not filled in yet. ${goWB(s.mod, s.sec, `Open ${m.title} › ${sc.title}`)}</p>`;
+    }
+    return `<section class="doc-sec"><h3>${s.n}. ${s.title}</h3><p class="doc-q">${s.q}</p>${body}<div class="doc-mentor">Mentor input or changes</div></section>`;
+  };
+  const exp = MODULES.find(m => m.id === 'mentorship').sections.find(s => s.id === 'm2');
+  const expDone = exp.prompts.filter(answered);
+  const expLeft = exp.prompts.filter(p => !p.optional && !answered(p)).length;
+  return shell(`
+    <div class="ph"><h1>IDP builder</h1><p class="lede">Your Initial Individual Development Plan, filled in from your workbook. Share it with your mentor before your 3-month meeting on ${fmt(addM(st, 3), true)}.</p></div>
+    <div class="idp-grid">
+      <aside class="stack">
+        <section class="card" aria-labelledby="idps-h"><h2 class="h3" id="idps-h">Sections</h2>
+          <p class="meta">${filled} of ${IDP.length} have content</p>
+          <ol class="idp-secs">${IDP.map(s => `<li>${icon(idpStatus(s))}<span class="t">${s.n}. ${s.title}</span><span class="s">${srcName(s)}</span></li>`).join('')}</ol>
+        </section>
+        <section class="card is-isnt"><h2 class="h3">What this IDP is</h2>
+          <ul><li>A structured reflection on progress and challenges</li><li>A planning tool to refine goals and priorities</li><li>A shared document to support mentoring</li></ul>
+          <h2 class="h3">What it isn’t</h2>
+          <ul><li>A performance evaluation</li><li>Tied to funding or employment decisions</li><li>A binding contract</li></ul>
+        </section>
+        <p class="privacy">${LOCK}<span>Wellness answers and crucial-conversation notes never go into your IDP. Nothing is shared until you export the PDF and send it yourself.</span></p>
+      </aside>
+      <div>
+        <div class="idp-bar"><p class="meta">Preview. Changes in your workbook show up here.</p><button type="button" class="btn" data-act="export">Export PDF</button></div>
+        <div class="doc-wrap">
+          <article class="doc" aria-label="IDP preview">
+            <p class="doc-kicker">Yale University · Office of Postdoctoral Affairs</p>
+            <h2 class="doc-title">Initial Individual Development Plan</h2>
+            <dl class="doc-meta">
+              <div><dt>Postdoc</dt><dd>Priya Raman</dd></div>
+              <div><dt>Department</dt><dd>Molecular Biophysics &amp; Biochemistry</dd></div>
+              <div><dt>Faculty mentor</dt><dd>${esc(S.mentor) || '—'}</dd></div>
+              <div><dt>Start date</dt><dd>${fmt(st, true)}</dd></div>
+            </dl>
+            ${IDP.map(docSec).join('')}
+            <section class="doc-sec"><h3>Aligning expectations with your mentor</h3>
+              ${expDone.length ? `<dl class="doc-qa">${expDone.map(p => `<div><dt>${p.label}</dt><dd>${esc(S.ans[p.id])}</dd></div>`).join('')}</dl>` : ''}
+              ${expLeft ? `<p class="doc-more">${expLeft} more topic${expLeft === 1 ? '' : 's'} to discuss. ${goWB('mentorship', 'm2', 'Open Mentorship › Align expectations')}</p>` : ''}
+            </section>
+            <section class="doc-sec"><h3>Acknowledgement</h3>
+              <p>We have discussed the goals and expectations in this Initial IDP and agree that it reflects the framework for postdoctoral training at Yale University.</p>
+              <div class="sig-lines"><div>Postdoctoral Associate/Fellow · signature and date</div><div>Faculty/Research Mentor · signature and date</div></div>
+            </section>
+          </article>
+        </div>
+      </div>
+    </div>`);
+}
+
+function rEvents(){
+  const f = S.evFilter;
+  const evs = S.events.filter(e => e.status === 'published' && isYmd(e.date) && ymd(e.date) >= TODAY && (f === 'all' || e.cat === f)).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+  let html = '', curKey = '';
+  evs.forEach(e => {
+    const d = new Date(ymd(e.date)), key = e.date.slice(0, 7);
+    if (key !== curKey){ if (curKey) html += '</ol>'; html += `<h2 class="month">${MONTH[d.getUTCMonth()]} ${d.getUTCFullYear()}</h2><ol class="events">`; curKey = key; }
+    html += `<li class="ev">
+      <time class="ev-date" datetime="${e.date}"><span class="m">${MON[d.getUTCMonth()]}</span><span class="d">${d.getUTCDate()}</span><span class="w">${WD[d.getUTCDay()]}</span></time>
+      <div class="ev-body"><h3 class="h3">${esc(e.title)}</h3>
+        <p class="meta">${trange(e.start, e.end)} · ${esc(e.loc)} · ${esc(e.host)}</p>
+        <p>${esc(e.desc)}</p>
+        <div class="ev-foot"><span class="pill">${CAT[e.cat] || 'Event'}</span>${e.link ? ext('Register') : '<span class="meta">No registration needed</span>'}</div>
+      </div></li>`;
+  });
+  if (curKey) html += '</ol>';
+  return shell(`
+    <div class="ph"><h1>Events &amp; programs</h1><p class="lede">Upcoming events from OPA, OISS, YPA, YBPA, and other Yale offices. You register on each organizer’s page.</p></div>
+    <div class="seg" role="group" aria-label="Filter by category">
+      ${[['all','All']].concat(Object.entries(CAT)).map(([v, l]) => `<button type="button" id="evf-${v}" data-act="evf" data-v="${v}" aria-pressed="${f === v}">${l}</button>`).join('')}
+    </div>
+    ${html || `<p class="empty">No upcoming ${f === 'all' ? '' : CAT[f].toLowerCase() + ' '}events yet. <button type="button" class="linkbtn" data-act="evf" data-v="all">Show all categories</button></p>`}`);
+}
+
+function rResources(){
+  const q = S.resQ.trim().toLowerCase();
+  const list = RES.filter(r => (S.resTopic === 'all' || r.topic === S.resTopic) && (!q || (r.name + ' ' + r.desc + ' ' + r.host).toLowerCase().includes(q)));
+  const secs = TOPICS.map(([id, label]) => {
+    const items = list.filter(r => r.topic === id); if (!items.length) return '';
+    return `<section class="res-sec" aria-labelledby="rt-${id}"><h2 id="rt-${id}">${label}</h2><ul class="res-list">${items.map(r => `<li><a class="res-name" href="#" data-inert>${esc(r.name)}<span aria-hidden="true"> ↗</span></a><p>${esc(r.desc)}</p><span class="res-host">${esc(r.host)}</span></li>`).join('')}</ul></section>`;
+  }).join('');
+  return shell(`
+    <div class="ph"><h1>Resources</h1><p class="lede">Offices, programs, and tools from the OPA workbook, in one place.</p></div>
+    <div class="res-tools">
+      <div class="res-search"><label for="res-q">Search resources</label><input type="search" id="res-q" data-q="res" value="${esc(S.resQ)}" placeholder="Try “tax” or “gym”"></div>
+      <div class="seg" role="group" aria-label="Filter by topic">
+        ${[['all','All topics']].concat(TOPICS).map(([v, l]) => `<button type="button" id="rt-btn-${v}" data-act="rest" data-v="${v}" aria-pressed="${S.resTopic === v}">${l}</button>`).join('')}
+      </div>
+    </div>
+    ${secs || `<p class="empty">No resources match “${esc(S.resQ)}”. Try another word, or <button type="button" class="linkbtn" data-act="resclear">clear the search</button>.</p>`}`);
+}
+
+function rSettings(){
+  const sw = (key, label, hint) => `<div class="switch-row"><label for="sw-${key}">${label}${hint ? `<span class="sub">${hint}</span>` : ''}</label><input type="checkbox" role="switch" class="switch" id="sw-${key}" data-notif="${key}"${S.notif[key] ? ' checked' : ''}></div>`;
+  return shell(`
+    <div class="ph"><h1>Settings</h1><p class="lede">Your appointment details, reminders, and privacy.</p></div>
+    <div class="set-grid">
+      <section class="card" aria-labelledby="s1"><h2 class="h3" id="s1">Your appointment</h2>
+        <div class="field"><label for="f-start">Appointment start date</label><input type="date" id="f-start" data-set="start" value="${esc(S.start)}"><p class="hint">Your checklist due dates and first-year plan use this date.</p></div>
+        <div class="field"><label for="f-visa">Visa status</label><select id="f-visa" data-set="visa">${Object.entries({j1:'J-1 scholar', opt:'F-1 OPT or STEM OPT', none:'Not an international scholar'}).map(([v, l]) => `<option value="${v}"${S.visa === v ? ' selected' : ''}>${l}</option>`).join('')}</select><p class="hint">Adds the OISS steps that apply to you.</p></div>
+        <div class="field"><label for="f-mentor">Faculty mentor</label><input type="text" id="f-mentor" data-set="mentor" value="${esc(S.mentor)}"><p class="hint">Shown on your IDP.</p></div>
+      </section>
+      <section class="card" aria-labelledby="s2"><h2 class="h3" id="s2">Reminders</h2>
+        ${sw('tasks', 'Email me before tasks are due', 'Time-sensitive tasks, like OISS and benefits deadlines')}
+        ${sw('idp', 'IDP milestone reminders', 'At 1, 3, 6, and 9 months')}
+        ${sw('digest', 'Weekly email with upcoming events', '')}
+        <div class="field" style="margin-top:12px"><label for="f-lead">Send task reminders</label><select id="f-lead" data-notif="lead">${[['1','1 day before'],['3','3 days before'],['7','1 week before']].map(([v, l]) => `<option value="${v}"${S.notif.lead === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+      </section>
+      <section class="card span" aria-labelledby="s3"><h2 class="h3" id="s3">What OPA staff can see</h2>
+        <div class="two">
+          <div><h3 class="h4">They can see</h3><ul class="yes"><li>Your name, NetID, department, and start date</li><li>Which checklist tasks you’ve finished</li><li>Which workbook sections are done, not what you wrote</li><li>When you last signed in</li></ul></div>
+          <div><h3 class="h4">They can’t see</h3><ul class="no"><li>Your workbook answers</li><li>Your IDP, unless you send it to someone</li><li>Your notes about your mentor</li></ul></div>
+        </div>
+      </section>
+      <section class="card span" aria-labelledby="s4"><h2 class="h3" id="s4">Your data</h2>
+        <p>Download everything you’ve entered, or delete your account and all of your answers.</p>
+        <div class="actions"><button type="button" class="btn ghost" data-act="exportdata">Download my data</button><button type="button" class="btn danger" data-act="askdelete">Delete my account</button></div>
+        ${S.confirmDelete ? `<div class="confirm" role="alert"><p><strong>Delete your account?</strong> This removes your checklist progress, workbook answers, and IDP. You can’t undo it.</p><div class="actions flush"><button type="button" class="btn danger solid" data-act="confirmdelete">Delete everything</button><button type="button" class="btn ghost" data-act="canceldelete">Cancel</button></div></div>` : ''}
+      </section>
+    </div>`);
+}
+
+function cell(c){
+  if (!c) return '<span class="na" aria-label="Not applicable">—</span>';
+  if (c.d === c.n) return `<span class="cell">${icon('done')}Done</span>`;
+  if (c.late) return `<span class="cell">${icon('late')}${c.d} of ${c.n} · overdue</span>`;
+  if (c.d === 0) return `<span class="cell">${icon('todo')}Not started</span>`;
+  return `<span class="cell">${icon('prog')}${c.d} of ${c.n}</span>`;
+}
+function rAdminOverview(){
+  const A = S.adm, q = A.q.trim().toLowerCase();
+  const all = ROWS.map(rowData);
+  const rows = all.filter(r =>
+    (!q || r.name.toLowerCase().includes(q) || r.id.includes(q)) &&
+    (A.dept === 'all' || r.dept === A.dept) &&
+    (A.start === 'all' || new Date(r.st).toISOString().slice(0, 7) === A.start) &&
+    (A.intl === 'all' || (A.intl === 'intl' ? r.visa !== 'none' : r.visa === 'none')) &&
+    (A.status === 'all' || (A.status === 'late' ? r.late : r.wb === 0)));
+  const depts = [...new Set(ROWS.map(r => r.dept))].sort();
+  const sel = (id, key, label, opts) => `<div><label for="${id}">${label}</label><select id="${id}" data-filter="${key}">${opts.map(([v, l]) => `<option value="${v}"${A[key] === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>`;
+  const tile = (k, v, s, pct, warn) => `<li class="tile${warn ? ' warn' : ''}"><p class="tile-k">${k}</p><p class="tile-v">${v}</p><p class="tile-s">${s}</p>${pct != null ? `<div class="bar" aria-hidden="true"><span style="width:${pct}%"></span></div>` : ''}</li>`;
+  return shell(`
+    <div class="ph ph-row"><div><h1>Completion overview</h1><p class="lede">Checklist and workbook status for each postdoc. Workbook answers and IDPs are never shown here.</p></div>
+      <div class="ph-actions"><label class="sr-only" for="f-cohort">Cohort</label><select id="f-cohort"><option>Fall 2026 cohort (48)</option><option>Summer 2026 cohort (31)</option><option>All active postdocs (212)</option></select><button type="button" class="btn ghost" data-act="csv">Export CSV</button></div></div>
+    <ul class="tiles" aria-label="Cohort totals">
+      ${tile('First-day tasks done', '96%', '46 of 48 postdocs', 96)}
+      ${tile('30-day checklist done', '63%', '30 of 48 postdocs', 63)}
+      ${tile('Have an overdue required task', '7', 'postdocs, 4 of them international', null, true)}
+      ${tile('Started the workbook', '81%', '39 of 48 postdocs', 81)}
+    </ul>
+    <div class="filters">
+      <div><label for="adm-q">Search</label><input type="search" id="adm-q" data-q="adm" value="${esc(A.q)}" placeholder="Name or NetID"></div>
+      ${sel('adm-dept', 'dept', 'Department', [['all','All departments']].concat(depts.map(d => [d, d])))}
+      ${sel('adm-start', 'start', 'Start date', [['all','Any month'],['2026-08','August 2026'],['2026-09','September 2026'],['2026-10','October 2026']])}
+      ${sel('adm-intl', 'intl', 'International', [['all','Everyone'],['intl','International'],['dom','Domestic']])}
+      ${sel('adm-status', 'status', 'Status', [['all','Any status'],['late','Has an overdue task'],['wb0','Workbook not started']])}
+    </div>
+    <div class="table-wrap"><table class="dt">
+      <caption class="sr-only">Postdoc completion status</caption>
+      <thead><tr><th scope="col">Postdoc</th><th scope="col">Department</th><th scope="col">Start</th><th scope="col">First day</th><th scope="col">First week</th><th scope="col">First 30 days</th><th scope="col">International</th><th scope="col">Workbook</th><th scope="col">Last active</th></tr></thead>
+      <tbody>${rows.length ? rows.map(r => `<tr>
+        <th scope="row"><a href="#admin-detail" data-go="admin-detail" data-pid="${r.id}">${esc(r.name)}</a><span class="sub">${r.id}</span></th>
+        <td class="wrap">${esc(r.dept)}</td><td>${fmt(r.st)}</td>
+        <td>${cell(r.cols[0])}</td><td>${cell(r.cols[1])}</td><td>${cell(r.cols[2])}</td><td>${cell(r.cols[3])}</td>
+        <td><span class="cell">${icon(r.wb === MODULES.length ? 'done' : r.mods.some(m => m !== 'todo') ? 'prog' : 'todo')}${r.wb} of ${MODULES.length}</span></td>
+        <td>${r.last}</td></tr>`).join('') : `<tr><td colspan="9">No postdocs match these filters. <button type="button" class="linkbtn" data-act="admclear">Clear filters</button></td></tr>`}</tbody>
+    </table></div>
+    <div class="tbl-foot"><p class="meta">${rows.length} shown. Sample data: 10 of the 48 postdocs in this cohort.</p><p class="meta">Totals above cover the whole cohort.</p></div>`, {admin:true});
+}
+
+function rAdminDetail(){
+  const r = rowData(ROWS.find(x => x.id === S.pid) || ROWS[0]);
+  const first = r.name.split(' ')[0];
+  const done = r.vis.filter(t => r.isDone(t.id)).length;
+  const phases = PHASES.map(p => {
+    const ts = r.vis.filter(t => t.ph === p.id); if (!ts.length) return '';
+    return `<h3 class="h4 dphase">${p.group === 'intl' ? 'International · ' : ''}${p.title}</h3><ul class="slist">${ts.map(t => {
+      const d = r.isDone(t.id), s = taskState(t, r.st, d), due = t.due ? fmt(t.due(r.st)) : '';
+      const lbl = s === 'done' ? 'Done' : s === 'late' ? `Overdue · was due ${due}` : s === 'past' ? 'Not done (optional)' : due ? `Due ${due}` : 'Open';
+      return `<li class="srow">${icon(s === 'done' ? 'done' : s === 'late' ? 'late' : s === 'soon' ? 'soon' : 'todo')}<span>${t.title}${t.req ? '' : ' <span class="meta">(optional)</span>'}</span><span class="meta">${lbl}</span></li>`;
+    }).join('')}</ul>`;
+  }).join('');
+  return shell(`
+    <p class="crumb"><a href="#admin-overview" data-go="admin-overview">← Completion overview</a></p>
+    <div class="ph"><h1>${esc(r.name)}</h1><p class="lede">${r.id} · ${esc(r.dept)} · Started ${fmt(r.st, true)} · ${VISA[r.visa]}</p></div>
+    <div class="banner">${LOCK}<span><strong>Private to ${esc(first)}:</strong> workbook answers, IDP, and mentor notes. You can see completion status only.</span></div>
+    <div class="detail-grid">
+      <section class="card" aria-labelledby="dc-h"><h2 class="h3" id="dc-h">Checklist · ${done} of ${r.vis.length} done</h2>${phases}</section>
+      <div class="stack">
+        <section class="card" aria-labelledby="dw-h"><h2 class="h3" id="dw-h">Workbook · ${r.wb} of ${MODULES.length} modules</h2>
+          <ul class="slist">${MODULES.map((m, i) => `<li class="srow">${icon(r.mods[i])}<span>${m.title}</span><span class="meta">${STATUS_TEXT[r.mods[i]]}</span></li>`).join('')}</ul>
+        </section>
+        <section class="card" aria-labelledby="da-h"><h2 class="h3" id="da-h">Activity</h2>
+          <dl class="kv"><div><dt>Last signed in</dt><dd>${r.last}</dd></div><div><dt>Initial IDP meeting due</dt><dd>${fmt(addM(r.st, 3), true)}</dd></div></dl>
+        </section>
+      </div>
+    </div>`, {admin:true});
+}
+
+function rAdminEvents(){
+  const evs = S.events.slice().sort((a, b) => a.date.localeCompare(b.date));
+  const F = S.evForm, E = S.evErr;
+  const fld = (key, label, input, hint) => `<div class="field"><label for="ef-${key}">${label}</label>${input}${hint ? `<p class="hint">${hint}</p>` : ''}${E[key] ? `<p class="err" id="err-${key}">${E[key]}</p>` : ''}</div>`;
+  const inp = (key, type, extra) => `<input type="${type}" id="ef-${key}" data-ef="${key}" value="${esc(F[key])}"${E[key] ? ` aria-invalid="true" aria-describedby="err-${key}"` : ''}${extra || ''}>`;
+  const rowHtml = e => S.confirmEv === e.id
+    ? `<tr class="confirm-row"><td colspan="4"><div class="confirm-in" role="alert"><span>Delete “${esc(e.title)}”? Postdocs stop seeing it right away.</span><button type="button" class="btn sm danger solid" data-act="delyes" data-id="${e.id}">Delete event</button><button type="button" class="btn sm ghost" data-act="delno">Cancel</button></div></td></tr>`
+    : `<tr><th scope="row" class="wrap">${esc(e.title)}<span class="sub">${CAT[e.cat] || ''} · ${esc(e.host)}</span></th><td>${isYmd(e.date) ? fmt(ymd(e.date), true) : ''}<span class="sub">${trange(e.start, e.end)}</span></td><td>${e.status === 'published' ? '<span class="pill pill-pub">Published</span>' : '<span class="pill pill-draft">Draft</span>'}</td><td><div class="row-actions"><button type="button" class="linkbtn" data-act="editev" data-id="${e.id}">Edit</button><button type="button" class="linkbtn danger" data-act="delev" data-id="${e.id}">Delete</button></div></td></tr>`;
+  return shell(`
+    <div class="ph ph-row"><div><h1>Events</h1><p class="lede">Published events show up right away on the postdoc Events &amp; programs page. Drafts stay here until you publish them.</p></div>
+      <button type="button" class="btn" data-act="newev">New event</button></div>
+    <div class="ae-grid">
+      <div class="table-wrap"><table class="dt">
+        <caption class="sr-only">All events</caption>
+        <thead><tr><th scope="col">Event</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>${evs.map(rowHtml).join('')}</tbody>
+      </table></div>
+      <section class="card" aria-labelledby="ef-h"><h2 class="h3" id="ef-h">${S.editingId ? 'Edit event' : 'New event'}</h2>
+        <form data-form="event" novalidate>
+          ${fld('title', 'Title', inp('title', 'text'))}
+          <div class="form-3">
+            ${fld('date', 'Date', inp('date', 'date'))}
+            ${fld('start', 'Starts', inp('start', 'time'))}
+            ${fld('end', 'Ends', inp('end', 'time'))}
+          </div>
+          ${fld('loc', 'Location', inp('loc', 'text'), 'A room, a campus area, or “Online.”')}
+          <div class="form-2">
+            ${fld('cat', 'Category', `<select id="ef-cat" data-ef="cat"${E.cat ? ' aria-invalid="true" aria-describedby="err-cat"' : ''}><option value="">Choose one</option>${Object.entries(CAT).map(([v, l]) => `<option value="${v}"${F.cat === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`)}
+            ${fld('host', 'Organizer', inp('host', 'text'))}
+          </div>
+          ${fld('desc', 'Description', `<textarea id="ef-desc" data-ef="desc" rows="3">${esc(F.desc)}</textarea>`)}
+          ${fld('link', 'Registration link', inp('link', 'url', ' placeholder="https://"'), 'Optional. Postdocs see a Register link that opens this page.')}
+          <div class="actions">
+            <button type="submit" class="btn" data-status="published">Publish</button>
+            <button type="submit" class="btn ghost" data-status="draft">Save as draft</button>
+            ${S.editingId ? '<button type="button" class="linkbtn" data-act="canceledit">Cancel</button>' : ''}
+          </div>
+        </form>
+      </section>
+    </div>`, {admin:true});
+}
+
+const SCREENS = {
+  'signin':{name:'Sign in', group:'postdoc', route:'/sign-in', render:rSignin, ann:{
+    purpose:'Get postdocs in without creating a password.',
+    on:['Email field and one button','A “check your email” state after the link is sent','A short list of what the app does, for first-time visitors'],
+    notes:['Email magic link through Supabase Auth, as the proposal suggests.','OPA staff use the same page. Their role decides what they see next.'],
+    qs:['New postdocs get a NetID only after their I-9. Should they sign in with a personal email at first?','Add Yale CAS (NetID) sign-in later? It needs ITS approval.']}},
+  'home':{name:'Home', group:'postdoc', route:'/', render:rHome, ann:{
+    purpose:'Answer “what should I do next?” at a glance.',
+    on:['Next step: the most urgent open task','This week’s step from the first-year plan','Progress by checklist phase, workbook, and IDP','Upcoming dates and events'],
+    notes:['Next step picks overdue required tasks first, then the soonest due.','Status always pairs an icon with text, never color alone (WCAG 1.4.1).','Try it: mark the next step done and watch Home update.'],
+    qs:['Should Home show events, or only reminders?']}},
+  'checklist':{name:'Checklist', group:'postdoc', route:'/checklist', render:rChecklist, ann:{
+    purpose:'Every onboarding task from workbook sections 2.1 and 2.2, grouped by when it’s due.',
+    on:['First day, first week, and first 30 days','International steps for the first 3 and first 30 days','A Required or Optional label on every task','Filters: all, still to do, required only'],
+    notes:['Due dates come from the start date in Settings.','International steps show only for international scholars. J-1-only steps hide for F-1 OPT.','Checking a task updates the OPA staff overview.'],
+    qs:['The workbook doesn’t mark tasks required or optional. OPA needs to confirm our labels.','Who edits task text: OPA staff in an admin screen, or us in code for v1?']}},
+  'plan':{name:'First-year plan', group:'postdoc', route:'/first-year-plan', render:rPlan, ann:{
+    purpose:'Show the whole first year, tied to the appointment start date.',
+    on:['Orientation, then the week-by-week steps for months 1–3 from workbook 4.3','Milestones at 3, 6, 9, and 12 months','This week highlighted; past weeks that are still open get a tag'],
+    notes:['Stages are evenly spaced, not drawn to scale.','Each weekly step links to the workbook section it refers to.'],
+    qs:['The workbook’s IDP timeline ends with a 9-month review; the proposal says 12 months. Keep both?']}},
+  'workbook':{name:'Workbook', group:'postdoc', route:'/workbook', render:rWorkbook, ann:{
+    purpose:'The paper orientation workbook, split into short sections.',
+    on:['Seven modules with status','Sections with time estimates and the workbook’s timing cues','Free-text, single-choice, and pick-several prompts'],
+    notes:['Answers save automatically and are private to the postdoc.','Wellness and mentoring prompts touch on burnout and belonging. They never leave the account unless the postdoc exports them.','OPA sees section status only.'],
+    qs:['The proposal lists six modules; the workbook also has a Community section. OK to add it as a seventh?']}},
+  'idp':{name:'IDP builder', group:'postdoc', route:'/idp-builder', render:rIDP, ann:{
+    purpose:'Turn workbook answers into the Initial IDP worksheet and export it as a PDF.',
+    on:['The worksheet’s 8 sections, filled in from the workbook','Blank mentor-input boxes and signature lines for the meeting','What the IDP is and isn’t, from the worksheet'],
+    notes:['Sections 5 and 8 have no workbook source, so postdocs write them here.','The PDF is made on the postdoc’s device. Nothing is shared automatically.'],
+    qs:['Should mentors get their own view, or is a PDF enough for v1?']}},
+  'events':{name:'Events & programs', group:'postdoc', route:'/events', render:rEvents, ann:{
+    purpose:'Upcoming events from OPA, OISS, YPA, YBPA, and other offices in one list.',
+    on:['Category filters from the proposal','Events grouped by month','A Register link to each organizer’s page'],
+    notes:['No RSVP in v1.','Events published on the staff Events screen show up here right away.'],
+    qs:['Import events from Yale Connect, or have OPA enter them by hand?']}},
+  'resources':{name:'Resources', group:'postdoc', route:'/resources', render:rResources, ann:{
+    purpose:'A searchable directory of the offices and tools named in the workbook.',
+    on:['Search box','Topic filters','Each link says who runs it'],
+    notes:['OPA staff will manage these links.'],
+    qs:['Do staff need a screen for editing resources in v1?']}},
+  'settings':{name:'Settings', group:'postdoc', route:'/settings', render:rSettings, ann:{
+    purpose:'Control reminders, see what OPA can see, and export or delete data.',
+    on:['Start date and visa status, which drive the checklist and plan','Reminder settings','“What OPA staff can see” in plain words','Download or delete data'],
+    notes:['Try it: change the visa status or start date, then open the checklist.','Delete asks for confirmation on the page.'],
+    qs:['Final call on OPA visibility: status only (shown here), totals only, or nothing individual?']}},
+  'admin-overview':{name:'Completion overview', group:'staff', route:'/staff/completion', render:rAdminOverview, ann:{
+    purpose:'Let OPA see who is on track and report cohort numbers.',
+    on:['Cohort totals for reporting','Filters: department, start month, international status, overdue','Search by name or NetID','Status per checklist phase, plus workbook modules done'],
+    notes:['Completion status only. No workbook answers or IDP content anywhere.','Priya Raman’s row is live: check off tasks on her checklist and it updates here.'],
+    qs:['Are per-phase columns enough, or do staff need a column per task?']}},
+  'admin-detail':{name:'Postdoc detail', group:'staff', tab:'admin-overview', route:'/staff/completion', render:rAdminDetail, ann:{
+    purpose:'Drill into one postdoc’s checklist progress.',
+    on:['Every checklist task with its status','Workbook modules with status only','A banner stating what staff can’t see'],
+    notes:['Matches the privacy promise on the postdoc Settings screen.'],
+    qs:['Should staff be able to send a reminder email from here?']}},
+  'admin-events':{name:'Manage events', group:'staff', route:'/staff/events', render:rAdminEvents, ann:{
+    purpose:'Create, edit, and remove events without code.',
+    on:['Event list with draft or published status','A form with the fields from the proposal','Delete with an on-page confirmation'],
+    notes:['Draft vs. published lets staff prepare events early.','Try it: publish the sample event, then open Events & programs.'],
+    qs:[]}},
+};
+function route(){
+  if (S.screen === 'workbook') return '/workbook/' + S.wb.mod;
+  if (S.screen === 'admin-detail') return '/staff/completion/' + S.pid;
+  return SCREENS[S.screen].route;
+}
+
+/* ---------- Rendering ---------- */
+const app = $('#app'), stage = $('#stage'), holder = $('#holder'), device = $('#device');
+function render(){
+  const a = document.activeElement;
+  let fid = null, ss = null, se = null;
+  if (a && app.contains(a) && a.id){ fid = a.id; try { ss = a.selectionStart; se = a.selectionEnd; } catch (e) {} }
+  app.className = 'app ' + (S.fi === 'wire' ? 'wire' : 'mock');
+  app.innerHTML = SCREENS[S.screen].render();
+  renderChrome();
+  if (fid){ const el = document.getElementById(fid); if (el){ el.focus({preventScroll:true}); if (ss != null && el.setSelectionRange){ try { el.setSelectionRange(ss, se); } catch (e) {} } } }
+  fit();
+}
+function renderChrome(){
+  document.querySelectorAll('[data-fi]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.fi === S.fi)));
+  document.querySelectorAll('[data-dev]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dev === S.device)));
+  document.querySelectorAll('.scr-btn').forEach(b => b.setAttribute('aria-current', String(b.dataset.screen === S.screen)));
+  $('#scr-select').value = S.screen;
+  device.className = 'device ' + S.device;
+  $('#url').textContent = 'postdoc-onboarding.vercel.app' + route();
+  const s = SCREENS[S.screen], A = s.ann, li = xs => xs.map(x => `<li>${x}</li>`).join('');
+  $('#ann').innerHTML = `<p class="ann-route">${route()}</p><h2>${s.name}</h2><p class="ann-purpose">${A.purpose}</p>
+    <div class="ann-cols"><div><h3>On this screen</h3><ul>${li(A.on)}</ul></div><div><h3>Notes</h3><ul>${li(A.notes)}</ul></div>${A.qs.length ? `<div><h3>Open questions</h3><ul>${li(A.qs)}</ul></div>` : ''}</div>`;
+}
+function fit(){
+  const W = S.device === 'phone' ? 390 : 1200;
+  device.style.width = W + 'px';
+  const cs = getComputedStyle(stage);
+  const avail = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const s = Math.min(1, avail / W);
+  device.style.transform = s < 1 ? `scale(${s})` : 'none';
+  holder.style.width = (W * s) + 'px';
+  holder.style.height = (device.offsetHeight * s) + 'px';
+}
+function go(id){
+  if (!SCREENS[id]) return;
+  S.screen = id; S.menuOpen = false;
+  try { history.replaceState(null, '', '#' + id); } catch (e) {}
+  render();
+  if (stage.getBoundingClientRect().top < 0) stage.scrollIntoView({block:'start'});
+}
+let toastTimer;
+function toast(msg){ const el = $('#toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 3800); }
+
+/* ---------- Chrome events ---------- */
+const GROUPS = [['postdoc','Postdocs'],['staff','OPA staff']];
+const entries = g => Object.entries(SCREENS).filter(([, s]) => s.group === g);
+$('#scr-nav').innerHTML = GROUPS.map(([g, label]) => `<p class="scr-group">${label}</p><ul class="scr-list">${entries(g).map(([id, s]) => `<li><button type="button" class="scr-btn" data-screen="${id}">${s.name}</button></li>`).join('')}</ul>`).join('');
+$('#scr-select').innerHTML = GROUPS.map(([g, label]) => `<optgroup label="${label}">${entries(g).map(([id, s]) => `<option value="${id}">${s.name}</option>`).join('')}</optgroup>`).join('');
+$('#scr-select').addEventListener('change', e => go(e.target.value));
+document.querySelector('.rail').addEventListener('click', e => {
+  const f = e.target.closest('[data-fi]'); if (f){ S.fi = f.dataset.fi; saveView(); render(); return; }
+  const d = e.target.closest('[data-dev]'); if (d){ S.device = d.dataset.dev; saveView(); render(); return; }
+  const s = e.target.closest('[data-screen]'); if (s) go(s.dataset.screen);
+});
+window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (SCREENS[id] && id !== S.screen) go(id); });
+new ResizeObserver(fit).observe(stage);
+new ResizeObserver(fit).observe(device);
+
+/* ---------- App events ---------- */
+const ACT = {
+  menu(){ S.menuOpen = !S.menuOpen; render(); },
+  done(el){ S.done[el.dataset.id] = true; render(); toast('Marked as done. OPA staff will see this task as complete.'); },
+  clf(el){ S.clFilter = el.dataset.v; render(); },
+  mod(el){ S.wb.mod = el.dataset.id; render(); },
+  sec(el){ S.wb.sec[S.wb.mod] = el.dataset.id; render(); if (el.dataset.focus){ const h = $('#sec-title'); if (h){ h.focus({preventScroll:true}); if (h.getBoundingClientRect().top < 0) h.scrollIntoView({block:'start'}); } } },
+  nextmod(){ const i = MODULES.findIndex(m => m.id === S.wb.mod); S.wb.mod = MODULES[(i + 1) % MODULES.length].id; render(); const h = $('#sec-title'); if (h){ h.focus({preventScroll:true}); if (h.getBoundingClientRect().top < 0) h.scrollIntoView({block:'start'}); } },
+  chip(el){
+    const id = el.dataset.p, v = el.dataset.v, p = PROMPTS[id];
+    const cur = (S.ans[id] || []).slice(), i = cur.indexOf(v);
+    if (i >= 0) cur.splice(i, 1); else if (!p.max || cur.length < p.max) cur.push(v);
+    S.ans[id] = cur; render();
+  },
+  export(){ toast('In the real app, this downloads “Initial IDP – Priya Raman.pdf” to your device.'); },
+  evf(el){ S.evFilter = el.dataset.v; render(); },
+  rest(el){ S.resTopic = el.dataset.v; render(); },
+  resclear(){ S.resQ = ''; S.resTopic = 'all'; render(); },
+  exportdata(){ toast('In the real app, this downloads a copy of everything you’ve entered.'); },
+  askdelete(){ S.confirmDelete = true; render(); },
+  canceldelete(){ S.confirmDelete = false; render(); },
+  confirmdelete(){ S.confirmDelete = false; render(); toast('Prototype only: nothing was deleted.'); },
+  'open-link'(){ S.signinSent = false; go('home'); },
+  'signin-reset'(){ S.signinSent = false; render(); },
+  csv(){ toast('In the real app, this downloads the filtered table as a CSV file.'); },
+  admclear(){ S.adm = {q:'', dept:'all', start:'all', intl:'all', status:'all'}; render(); },
+  newev(){ S.editingId = null; S.evForm = blankForm(); S.evErr = {}; render(); const t = $('#ef-title'); if (t) t.focus(); },
+  editev(el){ const e = S.events.find(x => x.id === el.dataset.id); if (!e) return; S.editingId = e.id; S.evForm = {title:e.title, date:e.date, start:e.start, end:e.end, loc:e.loc, cat:e.cat, host:e.host, desc:e.desc, link:e.link}; S.evErr = {}; render(); const t = $('#ef-title'); if (t) t.focus(); },
+  canceledit(){ S.editingId = null; S.evForm = blankForm(); S.evErr = {}; render(); },
+  delev(el){ S.confirmEv = el.dataset.id; render(); },
+  delno(){ S.confirmEv = null; render(); },
+  delyes(el){ const e = S.events.find(x => x.id === el.dataset.id); S.events = S.events.filter(x => x.id !== el.dataset.id); S.confirmEv = null; if (S.editingId === el.dataset.id){ S.editingId = null; S.evForm = blankForm(); } render(); toast(`Deleted “${e ? e.title : 'event'}.”`); },
+};
+let lastSubmitStatus = 'published';
+app.addEventListener('click', e => {
+  const inert = e.target.closest('a[data-inert]');
+  if (inert){ e.preventDefault(); toast('Links to other sites are placeholders in this mockup.'); return; }
+  const g = e.target.closest('[data-go]');
+  if (g){ e.preventDefault(); if (g.dataset.mod){ S.wb.mod = g.dataset.mod; if (g.dataset.sec) S.wb.sec[g.dataset.mod] = g.dataset.sec; } if (g.dataset.pid) S.pid = g.dataset.pid; go(g.dataset.go); return; }
+  const sb = e.target.closest('button[type="submit"][data-status]'); if (sb) lastSubmitStatus = sb.dataset.status;
+  const a = e.target.closest('[data-act]');
+  if (a && a.tagName !== 'INPUT' && ACT[a.dataset.act]) ACT[a.dataset.act](a, e);
+});
+app.addEventListener('change', e => {
+  const t = e.target, d = t.dataset;
+  if (d.act === 'toggle'){ S.done[d.id] = t.checked; render(); }
+  else if (d.act === 'week'){ S.wk[d.id] = t.checked; render(); }
+  else if (d.radio){ S.ans[d.radio] = t.value; render(); }
+  else if (d.set === 'start' || d.set === 'visa'){ S[d.set] = t.value; render(); }
+  else if (d.notif){ S.notif[d.notif] = t.type === 'checkbox' ? t.checked : t.value; }
+  else if (d.filter){ S.adm[d.filter] = t.value; render(); }
+  else if (d.ef){ S.evForm[d.ef] = t.value; }
+});
+app.addEventListener('input', e => {
+  const t = e.target, d = t.dataset;
+  if (d.ans){ S.ans[d.ans] = t.value; patchWB(); }
+  else if (d.idp){ S.idp[d.idp] = t.value; }
+  else if (d.ef){ S.evForm[d.ef] = t.value; }
+  else if (d.set === 'mentor'){ S.mentor = t.value; }
+  else if (d.q === 'res'){ S.resQ = t.value; render(); }
+  else if (d.q === 'adm'){ S.adm.q = t.value; render(); }
+  else if (t.id === 'f-email'){ S.email = t.value; }
+});
+app.addEventListener('submit', e => {
+  e.preventDefault();
+  const form = e.target.dataset.form;
+  if (form === 'signin'){
+    const v = S.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ S.emailErr = 'Enter your email address, like name@example.com.'; render(); const i = $('#f-email'); if (i) i.focus(); return; }
+    S.emailErr = ''; S.email = v; S.signinSent = true; render();
+  }
+  if (form === 'event'){
+    const status = (e.submitter && e.submitter.dataset.status) || lastSubmitStatus;
+    const F = S.evForm, err = {};
+    if (!F.title.trim()) err.title = 'Add a title.';
+    if (!isYmd(F.date)) err.date = 'Choose a date.';
+    if (!F.start) err.start = 'Add a start time.';
+    if (F.end && F.start && F.end <= F.start) err.end = 'End time must be after the start time.';
+    if (!F.cat) err.cat = 'Choose a category so postdocs can filter for it.';
+    if (F.link.trim() && !/^https:\/\/\S+\.\S+/.test(F.link.trim())) err.link = 'Use a full link that starts with https://';
+    S.evErr = err;
+    if (Object.keys(err).length){ render(); const first = $('#ef-' + Object.keys(err)[0]); if (first) first.focus(); return; }
+    const data = Object.assign({}, F, {title:F.title.trim(), link:F.link.trim(), status});
+    if (S.editingId){ const i = S.events.findIndex(x => x.id === S.editingId); if (i >= 0) S.events[i] = Object.assign({id:S.editingId}, data); }
+    else S.events.push(Object.assign({id:'e' + Date.now()}, data));
+    S.editingId = null; S.evForm = blankForm(); render();
+    toast(status === 'published' ? 'Published. Postdocs can see it on Events & programs now.' : 'Saved as a draft. Postdocs can’t see it yet.');
+  }
+});
+
+/* ---------- Start ---------- */
+const startId = location.hash.slice(1);
+if (SCREENS[startId]) S.screen = startId;
+render();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();
+</script>
+</body>
+</html>

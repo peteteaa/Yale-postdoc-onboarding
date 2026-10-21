@@ -1,4 +1,5 @@
 import { addDays, daysBetween, nthWorkday } from '#/lib/dates'
+import type { Status } from '#/components/StatusIcon'
 import type { ChecklistTask, Visa } from '#/data/checklist'
 
 /** Whether a task shows for someone with this visa status. */
@@ -42,4 +43,28 @@ export function taskStatus(
     return task.required ? { kind: 'overdue', due } : { kind: 'suggested', due }
   if (daysLeft <= 7) return { kind: 'due-soon', due, daysLeft }
   return { kind: 'open', due }
+}
+
+/** The status icon for a group of tasks, such as a phase. */
+export function groupStatus(statuses: TaskStatus[]): Status {
+  const doneCount = statuses.filter((s) => s.kind === 'done').length
+  if (doneCount === statuses.length) return 'done'
+  if (statuses.some((s) => s.kind === 'overdue')) return 'overdue'
+  return doneCount > 0 ? 'in-progress' : 'not-started'
+}
+
+/**
+ * The open task to do next: overdue tasks first, then required ones, then
+ * optional ones, soonest due first within each.
+ */
+export function nextTask<T extends { task: ChecklistTask; status: TaskStatus }>(
+  rows: T[],
+): T | undefined {
+  const rank = ({ task, status }: T) =>
+    status.kind === 'overdue' ? 0 : task.required ? 1 : 2
+  const dueTime = ({ status }: T) =>
+    'due' in status && status.due ? status.due.getTime() : Infinity
+  return rows
+    .filter((row) => row.status.kind !== 'done')
+    .sort((a, b) => rank(a) - rank(b) || dueTime(a) - dueTime(b))[0]
 }

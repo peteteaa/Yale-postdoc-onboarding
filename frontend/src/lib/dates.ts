@@ -49,3 +49,17 @@ const WITH_YEAR = new Intl.DateTimeFormat('en-US', {
 export function formatDate(date: Date, withYear = false): string {
   return (withYear ? WITH_YEAR : SHORT).format(date)
 }
+
+/** The same day of the month, `months` later. */
+export function addMonths(date: Date, months: number): Date {
+  const result = new Date(date)
+  result.setUTCMonth(result.getUTCMonth() + months)
+  return result
+}
+
+/** "Oct 6–12", or "Sep 29 – Oct 5" across two months. */
+export function formatRange(from: Date, to: Date): string {
+  if (from.getUTCMonth() === to.getUTCMonth())
+    return `${formatDate(from)}–${to.getUTCDate()}`
+  return `${formatDate(from)} – ${formatDate(to)}`
+}

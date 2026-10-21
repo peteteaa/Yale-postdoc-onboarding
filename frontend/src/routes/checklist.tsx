@@ -1,36 +1,17 @@
+import { DueInfo } from '#/components/DueInfo'
 import { FilterButtons } from '#/components/FilterButtons'
 import { Pill } from '#/components/Pill'
-import type { Status } from '#/components/StatusIcon'
 import { StatusIcon } from '#/components/StatusIcon'
 import type { ChecklistTask, Phase, Visa } from '#/data/checklist'
 import { PHASES, TASKS } from '#/data/checklist'
+import { INITIALLY_DONE, START_DATE, TODAY, VISA } from '#/data/postdoc'
 import type { TaskStatus } from '#/lib/checklist'
-import { appliesTo, taskStatus } from '#/lib/checklist'
-import { formatDate, parseDate } from '#/lib/dates'
+import { appliesTo, groupStatus, taskStatus } from '#/lib/checklist'
+import { formatDate } from '#/lib/dates'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/checklist')({ component: ChecklistPage })
-
-// TODO: from the signed-in postdoc's profile and saved progress
-const START_DATE = parseDate('2026-09-01')
-const VISA: Visa = 'j1'
-const INITIALLY_DONE = [
-  'i9-form',
-  'i9-documents',
-  'netid',
-  'id-card',
-  'first-meetings',
-  'trainings',
-  'benefits',
-  'vaccines',
-  'oiss-orientation',
-  'oiss-check-in',
-  'ssn-apply',
-  'tax-office',
-]
-// TODO: use the real date. Fixed so the page matches the mockup's sample data.
-const TODAY = parseDate('2026-10-11')
 
 const VISA_NOTE: Record<Visa, string> = {
   j1: "Shown because your profile says you're a J-1 scholar.",
@@ -163,14 +144,7 @@ function PhaseSection({
   onToggle: (taskId: string) => void
 }) {
   const doneCount = rows.filter((row) => row.status.kind === 'done').length
-  const status: Status =
-    doneCount === rows.length
-      ? 'done'
-      : rows.some((row) => row.status.kind === 'overdue')
-        ? 'overdue'
-        : doneCount > 0
-          ? 'in-progress'
-          : 'not-started'
+  const status = groupStatus(rows.map((row) => row.status))
   const shown = rows.filter(
     (row) =>
       filter === 'all' ||
@@ -252,48 +226,4 @@ function TaskItem({ task, status, onToggle }: Row & { onToggle: () => void }) {
       </div>
     </li>
   )
-}
-
-/** The task's deadline: done, overdue, due soon, or the date. */
-function DueInfo({ task, status }: Row) {
-  switch (status.kind) {
-    case 'done':
-      return (
-        <span className="inline-flex items-center gap-1.75">
-          <StatusIcon status="done" />
-          Done
-        </span>
-      )
-    case 'overdue':
-      return (
-        <>
-          <Pill variant="overdue">Overdue</Pill>
-          <span className="font-semibold text-late">
-            Was due {formatDate(status.due)}
-          </span>
-        </>
-      )
-    case 'suggested':
-      return <span>Suggested by {formatDate(status.due)}</span>
-    case 'due-soon':
-      return (
-        <>
-          <Pill variant="due-soon">
-            {status.daysLeft === 0
-              ? 'Due today'
-              : `Due in ${status.daysLeft} ${status.daysLeft === 1 ? 'day' : 'days'}`}
-          </Pill>
-          <span>{formatDate(status.due)}</span>
-        </>
-      )
-    case 'open':
-      if (!status.due) return <span>{task.dueText}</span>
-      return (
-        <span>
-          {task.dueText
-            ? `${task.dueText} · ${formatDate(status.due)}`
-            : `Due ${formatDate(status.due)}`}
-        </span>
-      )
-  }
 }

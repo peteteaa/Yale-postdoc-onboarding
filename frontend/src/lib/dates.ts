@@ -45,7 +45,39 @@ const WITH_YEAR = new Intl.DateTimeFormat('en-US', {
   timeZone: 'UTC',
 })
 
+const MONTH = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+
 /** "Sep 1", or "Sep 1, 2026" with `withYear`. */
 export function formatDate(date: Date, withYear = false): string {
   return (withYear ? WITH_YEAR : SHORT).format(date)
+}
+
+/** "September 2026" */
+export function formatMonth(date: Date): string {
+  return MONTH.format(date)
+}
+
+/**
+ * "12:00–1:00 pm", or "11:30 am–1:00 pm" when the times are on either side of
+ * noon. Takes 24-hour 'HH:MM' times. `end` can be ''.
+ */
+export function formatTimeRange(start: string, end: string): string {
+  if (!start) return ''
+  const parts = (time: string) => {
+    const [hour, minute] = time.split(':').map(Number)
+    return {
+      time: `${hour % 12 || 12}:${String(minute).padStart(2, '0')}`,
+      period: hour >= 12 ? 'pm' : 'am',
+    }
+  }
+  const from = parts(start)
+  if (!end) return `${from.time} ${from.period}`
+  const to = parts(end)
+  return from.period === to.period
+    ? `${from.time}–${to.time} ${to.period}`
+    : `${from.time} ${from.period}–${to.time} ${to.period}`
 }

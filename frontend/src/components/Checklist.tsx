@@ -1,3 +1,5 @@
+'use client'
+
 import { FilterButtons } from '#/components/FilterButtons'
 import { Pill } from '#/components/Pill'
 import type { Status } from '#/components/StatusIcon'
@@ -7,10 +9,7 @@ import { PHASES, TASKS } from '#/data/checklist'
 import type { TaskStatus } from '#/lib/checklist'
 import { appliesTo, taskStatus } from '#/lib/checklist'
 import { formatDate, parseDate } from '#/lib/dates'
-import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-
-export const Route = createFileRoute('/checklist')({ component: ChecklistPage })
 
 // TODO: from the signed-in postdoc's profile and saved progress
 const START_DATE = parseDate('2026-09-01')
@@ -49,7 +48,7 @@ const FILTERS: { value: Filter; label: string }[] = [
 
 type Row = { task: ChecklistTask; status: TaskStatus }
 
-function ChecklistPage() {
+export function Checklist() {
   // Ids of the tasks that are checked off.
   // TODO: save to the backend instead of keeping it in memory
   const [done, setDone] = useState(() => new Set(INITIALLY_DONE))

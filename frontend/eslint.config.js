@@ -1,20 +1,16 @@
 //  @ts-check
 
-import { tanstackConfig } from '@tanstack/eslint-config'
+import { defineConfig, globalIgnores } from 'eslint/config'
+import nextVitals from 'eslint-config-next/core-web-vitals'
+import nextTs from 'eslint-config-next/typescript'
 
-export default [
-  ...tanstackConfig,
-  {
-    rules: {
-      'import/no-cycle': 'off',
-      'import/order': 'off',
-      'sort-imports': 'off',
-      '@typescript-eslint/array-type': 'off',
-      '@typescript-eslint/require-await': 'off',
-      'pnpm/json-enforce-catalog': 'off',
-    },
-  },
-  {
-    ignores: ['eslint.config.js', 'prettier.config.js'],
-  },
-]
+export default defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  globalIgnores([
+    '.next/**',
+    'next-env.d.ts',
+    'eslint.config.js',
+    'prettier.config.js',
+  ]),
+])

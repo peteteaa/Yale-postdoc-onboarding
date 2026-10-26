@@ -100,8 +100,10 @@
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04);
   --shadow-doc: 0 1px 3px rgb(0 0 0 / 0.12), 0 8px 24px rgb(0 0 0 / 0.06);
 
-  /* Content width for header, nav, main and footer (1120px). */
-  --container-page: 70rem;
+  /* Content width for header, nav, main and footer. The full window, so rules
+     and dividers grow with it; paragraphs keep their own ch-based max widths.
+     (Figma's frame is 1120px.) */
+  --container-page: 100%;
 
   /* Corner radius: Tailwind's `rounded` is 4px (Figma radius/default) and
      `rounded-full` is the pill shape (radius/pill), so no new tokens here. */

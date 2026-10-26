@@ -1,3 +1,5 @@
+'use client'
+
 import { Pill } from '#/components/Pill'
 import type { Status } from '#/components/StatusIcon'
 import { StatusIcon } from '#/components/StatusIcon'
@@ -15,27 +17,19 @@ import {
   formatTimeRange,
   parseDate,
 } from '#/lib/dates'
-import { Link, createFileRoute } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { createContext, use, useRef, useState } from 'react'
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
-
-type View = 'overview' | 'events'
-
-export const Route = createFileRoute('/admin')({
-  validateSearch: (search: Record<string, unknown>): { view: View } => ({
-    view: search.view === 'events' ? 'events' : 'overview',
-  }),
-  component: AdminPage,
-})
 
 // TODO: restrict to OPA staff once sign-in exists
 
 // TODO: use the real date. Fixed so the page matches the mockup's sample data.
 const TODAY = parseDate('2026-10-11')
 
-const VIEWS: { value: View; label: string }[] = [
-  { value: 'overview', label: 'Completion overview' },
-  { value: 'events', label: 'Events' },
+const VIEWS: { href: string; label: string }[] = [
+  { href: '/admin/overview', label: 'Completion overview' },
+  { href: '/admin/events', label: 'Events' },
 ]
 
 const BUTTON =
@@ -47,22 +41,26 @@ const LINK_BUTTON =
 const INPUT =
   'w-full min-w-0 rounded border-[1.5px] border-field-line bg-paper px-3 py-2.5 text-large leading-[1.45] aria-invalid:border-late'
 
-function AdminPage() {
-  const { view } = Route.useSearch()
-  // Kept here so edits survive switching views.
+type EventsState = [PostdocEvent[], Dispatch<SetStateAction<PostdocEvent[]>>]
+
+const EventsContext = createContext<EventsState | null>(null)
+
+/** The staff tabs around each admin page. Used by the admin layout. */
+export function AdminShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname()
+  // Kept in the layout so edits survive switching pages.
   // TODO: load from and save to the backend
-  const [events, setEvents] = useState(SAMPLE_EVENTS)
+  const eventsState = useState(SAMPLE_EVENTS)
 
   return (
-    <>
+    <EventsContext value={eventsState}>
       <nav aria-label="Staff pages" className="border-b border-line">
         <ul className="mx-auto flex max-w-page flex-wrap gap-x-7 px-4 md:px-10">
           {VIEWS.map((option) => (
-            <li key={option.value}>
+            <li key={option.href}>
               <Link
-                to="/admin"
-                search={{ view: option.value }}
-                aria-current={option.value === view ? 'page' : undefined}
+                href={option.href}
+                aria-current={option.href === pathname ? 'page' : undefined}
                 className="block border-b-3 border-transparent pt-3.5 pb-2.75 text-medium text-ink no-underline hover:border-line aria-[current=page]:border-yale-blue aria-[current=page]:font-semibold"
               >
                 {option.label}
@@ -72,13 +70,9 @@ function AdminPage() {
         </ul>
       </nav>
       <main className="mx-auto max-w-page px-4 pt-6 pb-12 md:px-10 md:pt-10 md:pb-18">
-        {view === 'events' ? (
-          <EventsView events={events} setEvents={setEvents} />
-        ) : (
-          <OverviewView />
-        )}
+        {children}
       </main>
-    </>
+    </EventsContext>
   )
 }
 
@@ -207,7 +201,7 @@ function matches(row: Row, filters: Filters): boolean {
   )
 }
 
-function OverviewView() {
+export function OverviewView() {
   const [filters, setFilters] = useState(NO_FILTERS)
   const setFilter = <TKey extends keyof Filters>(
     key: TKey,
@@ -600,13 +594,10 @@ function validate(form: EventForm): FormErrors {
 const byDate = (a: PostdocEvent, b: PostdocEvent) =>
   (a.date + a.start).localeCompare(b.date + b.start)
 
-function EventsView({
-  events,
-  setEvents,
-}: {
-  events: PostdocEvent[]
-  setEvents: Dispatch<SetStateAction<PostdocEvent[]>>
-}) {
+export function EventsView() {
+  const eventsState = use(EventsContext)
+  if (!eventsState) throw new Error('EventsView must be inside AdminShell')
+  const [events, setEvents] = eventsState
   const [form, setForm] = useState(BLANK_FORM)
   const [errors, setErrors] = useState<FormErrors>({})
   // The event being edited, or null when the form makes a new one.

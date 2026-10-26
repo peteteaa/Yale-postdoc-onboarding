@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react'
 
-type PillVariant = 'default' | 'required' | 'overdue' | 'due-soon'
+type PillVariant =
+  'default' | 'required' | 'overdue' | 'due-soon' | 'published' | 'draft'
 
 const VARIANT_CLASSES: Record<PillVariant, string> = {
   default: 'border-line bg-paper text-ink-2',
   required: 'border-yale-blue bg-paper text-yale-blue',
   overdue: 'border-late bg-late text-paper',
   'due-soon': 'border-soon bg-soon text-ink',
+  published: 'border-ok bg-paper text-ok',
+  draft: 'border-dashed border-ink-2 bg-paper text-ink-2',
 }
 
 /** Short status or category tag, from the Figma "Pill" component. */

@@ -24,12 +24,14 @@ const TAB_LINK =
 
 /**
  * The Yale header (signature, rule, site title, signed-in postdoc) and the main
- * tabs. On phones the tabs collapse into a Menu button.
+ * tabs. On phones the tabs collapse into a Menu button. Admin pages get no tabs.
  */
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false)
   const pathname = usePathname()
   const current = TABS.find((tab) => tab.to === pathname)
+  // Staff pages have their own tabs instead
+  const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/')
   const initials = FULL_NAME.split(' ')
     .map((part) => part[0])
     .join('')
@@ -64,45 +66,47 @@ export function SiteHeader() {
         </div>
       </header>
 
-      <nav aria-label="Main" className="border-b border-line bg-paper">
-        <div className="mx-auto max-w-page px-4 md:px-10">
-          <button
-            type="button"
-            aria-expanded={menuOpen}
-            aria-controls="main-tabs"
-            onClick={() => setMenuOpen((open) => !open)}
-            className="flex min-h-12.5 w-full cursor-pointer items-center justify-between text-medium font-semibold md:hidden"
-          >
-            Menu
-            {current && (
-              <span className="font-normal text-ink-2">{current.label}</span>
-            )}
-          </button>
-          <ul
-            id="main-tabs"
-            className={`${menuOpen ? 'flex' : 'hidden'} flex-col pb-2 md:flex md:flex-row md:flex-wrap md:gap-x-7 md:pb-0`}
-          >
-            {TABS.map((tab) => (
-              <li key={tab.label}>
-                {tab.to ? (
-                  <Link
-                    href={tab.to}
-                    aria-current={tab.to === pathname ? 'page' : undefined}
-                    onClick={() => setMenuOpen(false)}
-                    className={TAB_LINK}
-                  >
-                    {tab.label}
-                  </Link>
-                ) : (
-                  <a href="#" className={TAB_LINK}>
-                    {tab.label}
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </nav>
+      {!isAdmin && (
+        <nav aria-label="Main" className="border-b border-line bg-paper">
+          <div className="mx-auto max-w-page px-4 md:px-10">
+            <button
+              type="button"
+              aria-expanded={menuOpen}
+              aria-controls="main-tabs"
+              onClick={() => setMenuOpen((open) => !open)}
+              className="flex min-h-12.5 w-full cursor-pointer items-center justify-between text-medium font-semibold md:hidden"
+            >
+              Menu
+              {current && (
+                <span className="font-normal text-ink-2">{current.label}</span>
+              )}
+            </button>
+            <ul
+              id="main-tabs"
+              className={`${menuOpen ? 'flex' : 'hidden'} flex-col pb-2 md:flex md:flex-row md:flex-wrap md:gap-x-7 md:pb-0`}
+            >
+              {TABS.map((tab) => (
+                <li key={tab.label}>
+                  {tab.to ? (
+                    <Link
+                      href={tab.to}
+                      aria-current={tab.to === pathname ? 'page' : undefined}
+                      onClick={() => setMenuOpen(false)}
+                      className={TAB_LINK}
+                    >
+                      {tab.label}
+                    </Link>
+                  ) : (
+                    <a href="#" className={TAB_LINK}>
+                      {tab.label}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </nav>
+      )}
     </>
   )
 }

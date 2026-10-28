@@ -32,7 +32,9 @@ export function SiteFooter() {
               </li>
             ))}
           </ul>
-          <p>© 2026 Yale University. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} Yale University. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

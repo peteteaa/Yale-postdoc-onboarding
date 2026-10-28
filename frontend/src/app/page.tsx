@@ -1,11 +1,10 @@
-// TODO: build the Home page from the mockup
-export default function Home() {
-  return (
-    <main className="mx-auto max-w-page px-4 py-6 md:px-10 md:py-10">
-      <h1 className="text-h1 text-yale-blue">Postdoc Onboarding</h1>
-      <p className="mt-2.5 max-w-[65ch] text-lede text-ink-2">
-        Your first year at Yale, in one place.
-      </p>
-    </main>
-  )
+import { Home } from '#/components/Home'
+import { getCurrentUser } from '#/lib/auth'
+import { todayInNewHaven } from '#/lib/dates'
+
+export default async function HomePage() {
+  // Reading the session cookie renders this on each request, so "today" isn't
+  // the day the site was built. proxy.ts sends signed-out visitors to /login.
+  const user = await getCurrentUser()
+  return <Home name={user?.firstName ?? 'Guest'} today={todayInNewHaven()} />
 }

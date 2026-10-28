@@ -1,11 +1,12 @@
 'use client'
 
-import { FULL_NAME } from '#/data/postdoc'
+import { signOut } from '#/app/login/actions'
+import type { CurrentUser } from '#/lib/auth'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
-type Tab = { label: string; to?: '/' | '/checklist' }
+type Tab = { label: string; to?: '/' | '/checklist' | '/settings' }
 
 // TODO: add `to` to each tab as its page gets built
 const TABS: Tab[] = [
@@ -16,25 +17,32 @@ const TABS: Tab[] = [
   { label: 'IDP builder' },
   { label: 'Events & programs' },
   { label: 'Resources' },
-  { label: 'Settings' },
+  { label: 'Settings', to: '/settings' },
 ]
 
 const TAB_LINK =
   'block border-b border-line py-3 text-medium text-ink no-underline md:border-b-3 md:border-transparent md:pt-3.5 md:pb-2.75 md:hover:border-line aria-[current=page]:font-semibold max-md:aria-[current=page]:pl-3.5 max-md:aria-[current=page]:text-yale-blue max-md:aria-[current=page]:shadow-[inset_4px_0_0_var(--color-yale-blue)] md:aria-[current=page]:border-yale-blue'
 
+/** "Priya Raman" → "PR", "guest" or "priya@example.com" → "G" or "P". */
+function initialsOf(name: string) {
+  const words = name.includes('@') ? [name] : name.split(/\s+/)
+  return words
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
 /**
- * The Yale header (signature, rule, site title, signed-in postdoc) and the main
- * tabs. On phones the tabs collapse into a Menu button. Admin pages get no tabs.
+ * The Yale header (signature, rule, site title, signed-in user, Sign out) and
+ * the main tabs. On phones the tabs collapse into a Menu button. Admin pages
+ * get no tabs, and signed-out visitors (the sign-in page) get neither.
  */
-export function SiteHeader() {
+export function SiteHeader({ user }: { user: CurrentUser | null }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const pathname = usePathname()
   const current = TABS.find((tab) => tab.to === pathname)
   // Staff pages have their own tabs instead
   const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/')
-  const initials = FULL_NAME.split(' ')
-    .map((part) => part[0])
-    .join('')
 
   return (
     <>
@@ -53,20 +61,30 @@ export function SiteHeader() {
             >
               Postdoc Onboarding
             </Link>
-            <div className="flex items-center gap-2.5 text-small whitespace-nowrap">
-              <span
-                aria-hidden="true"
-                className="grid size-7.5 place-items-center rounded-full bg-paper text-label-sm font-semibold text-yale-blue md:size-8.5 md:text-label"
-              >
-                {initials}
-              </span>
-              <span className="max-md:sr-only">{FULL_NAME}</span>
-            </div>
+            {user && (
+              <div className="flex min-w-0 items-center gap-2.5 text-small whitespace-nowrap">
+                <span
+                  aria-hidden="true"
+                  className="grid size-7.5 shrink-0 place-items-center rounded-full bg-paper text-label-sm font-semibold text-yale-blue md:size-8.5 md:text-label"
+                >
+                  {initialsOf(user.name)}
+                </span>
+                <span className="truncate max-md:sr-only">{user.name}</span>
+                <form action={signOut}>
+                  <button
+                    type="submit"
+                    className="ml-1.5 cursor-pointer font-semibold text-paper underline underline-offset-3"
+                  >
+                    Sign out
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {!isAdmin && (
+      {user && !isAdmin && (
         <nav aria-label="Main" className="border-b border-line bg-paper">
           <div className="mx-auto max-w-page px-4 md:px-10">
             <button

@@ -254,7 +254,7 @@ function TaskItem({ task, status, onToggle }: Row & { onToggle: () => void }) {
 }
 
 /** The task's deadline: done, overdue, due soon, or the date. */
-function DueInfo({ task, status }: Row) {
+export function DueInfo({ task, status }: Row) {
   switch (status.kind) {
     case 'done':
       return (

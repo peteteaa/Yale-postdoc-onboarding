@@ -6,14 +6,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
-type Tab = { label: string; to?: '/' | '/checklist' | '/settings' }
+type Tab = {
+  label: string
+  to?: '/' | '/checklist' | '/workbook' | '/settings'
+}
 
 // TODO: add `to` to each tab as its page gets built
 const TABS: Tab[] = [
   { label: 'Home', to: '/' },
   { label: 'Checklist', to: '/checklist' },
   { label: 'My first-year plan' },
-  { label: 'Workbook' },
+  { label: 'Workbook', to: '/workbook' },
   { label: 'IDP builder' },
   { label: 'Events & programs' },
   { label: 'Resources' },

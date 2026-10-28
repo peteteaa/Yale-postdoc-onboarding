@@ -141,12 +141,14 @@
     min-height: 100%;
   }
 
-  /* Yale typeface for titles and headings. h4 stays sans (bold) as in the mockup. */
+  /* Yale typeface for titles and headings. h4 stays sans (bold) as in the mockup.
+     Balanced wrapping keeps a heading from leaving one word on its last line. */
   h1,
   h2,
   h3 {
     font-family: var(--font-serif);
     font-weight: 400;
+    text-wrap: balance;
   }
 
   /* Tailwind's reset strips link styles. Put back underlined links so they are

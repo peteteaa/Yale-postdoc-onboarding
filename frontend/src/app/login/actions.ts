@@ -1,21 +1,25 @@
 'use server'
 
-import type { AuthError } from '@supabase/supabase-js'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+import type { FormError } from '#/lib/auth-errors'
+import { formError } from '#/lib/auth-errors'
 import { safeNextPath } from '#/lib/paths'
 import { createClient } from '#/lib/supabase/server'
 
 export type LoginState = {
   /** What they typed, so it's still there after the form resets. */
   email: string
-  error?: { field?: 'email' | 'password'; message: string }
-  /** Set once we've emailed them a link: a sign-in link or a confirm-your-account link. */
-  sent?: 'magic-link' | 'confirm'
+  error?: FormError
+  /** Set once we've emailed them a link: to sign in, confirm a new account, or set a password on an existing one. */
+  sent?: 'magic-link' | 'confirm' | 'set-password'
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** Where a set-your-password link goes: Settings, which then asks for the password. */
+const SET_PASSWORD_PAGE = '/settings?set-password=1'
 
 const INVALID_EMAIL: LoginState['error'] = {
   field: 'email',
@@ -52,6 +56,22 @@ export async function signIn(
       password,
       options: { emailRedirectTo: await emailRedirectTo(next) },
     })
+    // The email already has an account, e.g. one made with an email link and
+    // no password. Supabase says so with an error when it doesn't make people
+    // confirm their email, and with a user with no identities when it does.
+    // Email them a link to set a password rather than setting this one: that
+    // way only the owner of the email can.
+    if (
+      error?.code === 'user_already_exists' ||
+      (!error && data.user?.identities?.length === 0)
+    ) {
+      const { error: linkError } = await supabase.auth.resetPasswordForEmail(
+        email,
+        { redirectTo: await emailRedirectTo(SET_PASSWORD_PAGE) },
+      )
+      if (linkError) return { email, error: formError(linkError) }
+      return { email, sent: 'set-password' }
+    }
     if (error) return { email, error: formError(error) }
     // No session means Supabase wants them to confirm their email first.
     if (!data.session) return { email, sent: 'confirm' }
@@ -111,45 +131,4 @@ async function siteOrigin() {
   const host = h.get('x-forwarded-host') ?? h.get('host')
   const proto = h.get('x-forwarded-proto') ?? 'https'
   return `${proto}://${host}`
-}
-
-type FormError = NonNullable<LoginState['error']>
-
-/** Supabase error codes in plain words, and the field each is about. */
-const ERRORS: Record<string, FormError> = {
-  invalid_credentials: {
-    field: 'password',
-    message: "That email and password don't match an account.",
-  },
-  email_address_invalid: {
-    field: 'email',
-    message: 'That email address can’t be used. Check it for typos.',
-  },
-  email_not_confirmed: {
-    message:
-      'Confirm your email first. We sent you a link when you created your account.',
-  },
-  user_already_exists: {
-    message: 'There’s already an account with that email. Sign in instead.',
-  },
-  over_email_send_rate_limit: {
-    message: 'Too many emails sent. Wait a few minutes, then try again.',
-  },
-  over_request_rate_limit: {
-    message: 'Too many tries. Wait a few minutes, then try again.',
-  },
-  anonymous_provider_disabled: {
-    message:
-      'Guest mode is turned off. Turn on anonymous sign-ins in Supabase.',
-  },
-  signup_disabled: { message: 'New accounts are turned off. Contact OPA.' },
-}
-
-function formError(error: AuthError): FormError {
-  if (error.code && error.code in ERRORS) return ERRORS[error.code]
-  // e.g. weak_password, whose message lists Supabase's password rules
-  return {
-    field: error.code === 'weak_password' ? 'password' : undefined,
-    message: error.message || 'Something went wrong. Try again.',
-  }
 }

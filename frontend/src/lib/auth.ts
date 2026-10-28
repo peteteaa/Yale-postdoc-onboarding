@@ -3,6 +3,8 @@ import { createClient } from '#/lib/supabase/server'
 export type CurrentUser = {
   /** The name to show: their full name if we have it, otherwise their email. */
   name: string
+  /** null for guests. */
+  email: string | null
   /** Signed in with "Continue as guest" (a Supabase anonymous user). */
   isGuest: boolean
 }
@@ -22,6 +24,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       : typeof fullName === 'string' && fullName
         ? fullName
         : (claims.email ?? 'Signed in'),
+    email: claims.email ?? null,
     isGuest,
   }
 }

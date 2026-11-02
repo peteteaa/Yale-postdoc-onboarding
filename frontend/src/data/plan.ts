@@ -1,6 +1,6 @@
 // The first-year plan: the onboarding checklist plus the workbook's IDP steps,
-// grouped into phases counted from the appointment start date, the way the
-// Initial IDP worksheet counts ("within the first three months of
+// as points on a timeline counted from the appointment start date, the way
+// the Initial IDP worksheet counts ("within the first three months of
 // appointment").
 
 import type { PhaseId } from '#/data/checklist'
@@ -10,59 +10,80 @@ export type PlanOffset = {
   from: 'start' | 'orientation'
 } & ({ days: number } | { months: number })
 
-export type PlanPhase = {
+/** A labeled point on the timeline, like "Week 1". */
+export type PlanPoint = {
   id: string
-  title: string
-  /** The phase's last day, or later if one of its tasks is due later. */
-  ends: PlanOffset
+  label: string
+  /** What happens then, when the label alone doesn't say. */
+  detail?: string
+  at: PlanOffset
   /** Checklist phases whose tasks belong here. */
   checklistPhases: PhaseId[]
 }
 
-/** A workbook step, placed in the phase its date falls in. */
+/** A workbook step. It goes on the first point on or after its date. */
 export type PlanItem = {
   id: string
   title: string
   due: PlanOffset
   /** How the workbook words the deadline. */
   dueText: string
+  /** A point to put it on instead. */
+  point?: string
 }
 
-export const PLAN_PHASES: PlanPhase[] = [
+// The checklist's phases, then the IDP timeline's. Points with nothing on
+// them for this postdoc (Day 3 for domestic postdocs) are left out.
+export const PLAN_POINTS: PlanPoint[] = [
   {
-    id: 'first-day',
-    title: 'First day',
-    ends: { from: 'start', days: 0 },
+    id: 'day-1',
+    label: 'Day 1',
+    at: { from: 'start', days: 0 },
     checklistPhases: ['first-day'],
   },
   {
-    id: 'first-week',
-    title: 'First week',
-    ends: { from: 'start', days: 6 },
-    checklistPhases: ['first-week', 'intl-first-3-days'],
+    id: 'day-3',
+    label: 'Day 3',
+    at: { from: 'start', days: 2 },
+    checklistPhases: ['intl-first-3-days'],
   },
   {
-    id: 'first-30-days',
-    title: 'First 30 days',
-    ends: { from: 'start', days: 30 },
+    id: 'week-1',
+    label: 'Week 1',
+    at: { from: 'start', days: 6 },
+    checklistPhases: ['first-week'],
+  },
+  {
+    id: 'month-1',
+    label: 'Month 1',
+    at: { from: 'start', days: 30 },
     checklistPhases: ['first-30-days', 'intl-first-30-days'],
   },
   {
-    id: 'months-2-3',
-    title: 'Months 2–3',
-    ends: { from: 'start', months: 3 },
+    id: 'orientation',
+    label: 'Orientation',
+    at: { from: 'orientation', days: 0 },
     checklistPhases: [],
   },
   {
-    id: 'months-4-6',
-    title: 'Months 4–6',
-    ends: { from: 'start', months: 6 },
+    id: 'month-3',
+    label: 'Month 3',
+    detail: 'Initial IDP',
+    at: { from: 'start', months: 3 },
     checklistPhases: [],
   },
   {
-    id: 'months-7-9',
-    title: 'Months 7–9',
-    ends: { from: 'start', months: 9 },
+    id: 'month-6',
+    label: 'Month 6',
+    detail: 'Progress review',
+    at: { from: 'start', months: 6 },
+    checklistPhases: [],
+  },
+  {
+    id: 'month-9',
+    label: 'Month 9',
+    detail: 'Update your IDP',
+    at: { from: 'start', months: 9 },
     checklistPhases: [],
   },
 ]
@@ -75,6 +96,7 @@ export const PLAN_ITEMS: PlanItem[] = [
     title: 'Attend Postdoc Orientation',
     due: { from: 'orientation', days: 0 },
     dueText: 'Your orientation session',
+    point: 'orientation',
   },
   {
     // Workbook 2.3
@@ -96,6 +118,7 @@ export const PLAN_ITEMS: PlanItem[] = [
     title: 'Share your Initial IDP with your mentor and meet',
     due: { from: 'start', months: 3 },
     dueText: 'Within your first three months',
+    point: 'month-3',
   },
   {
     // "6 Months" row of the IDP timeline
@@ -103,6 +126,7 @@ export const PLAN_ITEMS: PlanItem[] = [
     title: 'Review progress and adjust your goals',
     due: { from: 'start', months: 6 },
     dueText: 'At 6 months',
+    point: 'month-6',
   },
   {
     // "9 Months" row of the IDP timeline
@@ -110,5 +134,6 @@ export const PLAN_ITEMS: PlanItem[] = [
     title: 'Review achievements and update your IDP for next year',
     due: { from: 'start', months: 9 },
     dueText: 'At 9 months',
+    point: 'month-9',
   },
 ]

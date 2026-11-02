@@ -65,7 +65,7 @@ export function Home({
     done,
   })
   const idpMeeting = plan
-    .flatMap((phase) => phase.rows)
+    .flatMap((point) => point.rows)
     .find((row) => row.id === 'idp-meeting')!.due!
   const daysToIdp = daysBetween(today, idpMeeting)
 
@@ -86,7 +86,7 @@ export function Home({
       </div>
 
       <div className="mb-6">
-        <PlanTimeline phases={plan} start={START_DATE} />
+        <PlanTimeline points={plan} start={START_DATE} />
       </div>
 
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">

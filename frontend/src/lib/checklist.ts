@@ -30,16 +30,43 @@ export type TaskStatus =
   | { kind: 'due-soon'; due: Date; daysLeft: number }
   | { kind: 'open'; due: Date | null }
 
+/**
+ * The most urgent open task: overdue required tasks first, then other required
+ * tasks, then optional ones. Ties go to the earliest due date.
+ */
+export function nextTask<T extends { task: ChecklistTask; status: TaskStatus }>(
+  rows: T[],
+  start: Date,
+): T | null {
+  const rank = ({ task, status }: T) =>
+    status.kind === 'overdue' ? 0 : task.required ? 1 : 2
+  const dueTime = ({ task }: T) => dueDate(task, start)?.getTime() ?? Infinity
+  const open = rows.filter((row) => row.status.kind !== 'done')
+  open.sort((a, b) => rank(a) - rank(b) || dueTime(a) - dueTime(b))
+  return open[0] ?? null
+}
+
 export function taskStatus(
   task: ChecklistTask,
   { start, today, done }: { start: Date; today: Date; done: boolean },
 ): TaskStatus {
+  return dueStatus(dueDate(task, start), {
+    today,
+    done,
+    required: task.required,
+  })
+}
+
+/** Status of anything with a due date: a checklist task or a plan step. */
+export function dueStatus(
+  due: Date | null,
+  { today, done, required }: { today: Date; done: boolean; required: boolean },
+): TaskStatus {
   if (done) return { kind: 'done' }
-  const due = dueDate(task, start)
   if (!due) return { kind: 'open', due: null }
   const daysLeft = daysBetween(today, due)
   if (daysLeft < 0)
-    return task.required ? { kind: 'overdue', due } : { kind: 'suggested', due }
+    return required ? { kind: 'overdue', due } : { kind: 'suggested', due }
   if (daysLeft <= 7) return { kind: 'due-soon', due, daysLeft }
   return { kind: 'open', due }
 }

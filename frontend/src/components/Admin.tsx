@@ -29,14 +29,13 @@ import { usePathname } from 'next/navigation'
 import { createContext, use, useRef, useState } from 'react'
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
 
-// TODO: restrict to OPA staff once sign-in exists
-
 // TODO: use the real date. Fixed so the page matches the mockup's sample data.
 const TODAY = parseDate('2026-10-11')
 
 const VIEWS: { href: string; label: string }[] = [
   { href: '/admin/overview', label: 'Completion overview' },
   { href: '/admin/events', label: 'Events' },
+  { href: '/admin/resources', label: 'Resources' },
 ]
 
 type EventsState = [PostdocEvent[], Dispatch<SetStateAction<PostdocEvent[]>>]

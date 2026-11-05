@@ -9,6 +9,11 @@ function isLogin(pathname: string) {
   return pathname === '/login' || pathname.startsWith('/login/')
 }
 
+/** The OPA staff pages: /admin and everything under it. */
+function isStaff(pathname: string) {
+  return pathname === '/admin' || pathname.startsWith('/admin/')
+}
+
 /** Pages you can see without signing in. */
 function isPublic(pathname: string) {
   return isLogin(pathname) || pathname.startsWith('/auth/')
@@ -68,6 +73,12 @@ export async function proxy(request: NextRequest) {
   }
   if (signedIn && isLogin(pathname)) {
     return redirectTo(new URL('/', request.url))
+  }
+  // Staff pages are for admins only, so whoever can see them can also edit.
+  // Same check the database uses (public.is_admin()).
+  if (isStaff(pathname)) {
+    const { data: admin } = await supabase.rpc('is_admin')
+    if (admin !== true) return redirectTo(new URL('/', request.url))
   }
 
   return response

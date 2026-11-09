@@ -9,8 +9,36 @@ export function parseDate(iso: string): Date {
   return new Date(Date.UTC(year, month - 1, day))
 }
 
+const NEW_HAVEN_DAY = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: 'America/New_York',
+})
+
+/**
+ * Today's date in New Haven as 'YYYY-MM-DD'. Due dates are Yale's, so this is
+ * the same day for every postdoc and for the server, wherever they are.
+ */
+export function todayInNewHaven(): string {
+  const parts = NEW_HAVEN_DAY.formatToParts(new Date())
+  const part = (type: string) => parts.find((p) => p.type === type)!.value
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
 export function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * DAY_MS)
+}
+
+/** Same day of the month, `months` later. Oct 5 + 3 is Jan 5. */
+export function addMonths(date: Date, months: number): Date {
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth() + months,
+      date.getUTCDate(),
+    ),
+  )
 }
 
 /**

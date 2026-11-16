@@ -8,7 +8,7 @@ import { useState } from 'react'
 
 type Tab = {
   label: string
-  to?: '/' | '/checklist' | '/workbook' | '/resources' | '/settings'
+  to?: '/' | '/checklist' | '/workbook' | '/idp' | '/resources' | '/settings'
 }
 
 // TODO: add `to` to each tab as its page gets built
@@ -17,7 +17,7 @@ const TABS: Tab[] = [
   { label: 'Checklist', to: '/checklist' },
   { label: 'My first-year plan' },
   { label: 'Workbook', to: '/workbook' },
-  { label: 'IDP builder' },
+  { label: 'IDP builder', to: '/idp' },
   { label: 'Events & programs' },
   { label: 'Resources', to: '/resources' },
   { label: 'Settings', to: '/settings' },

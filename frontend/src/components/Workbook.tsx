@@ -1,21 +1,40 @@
 'use client'
 
+import { saveAnswers } from '#/app/workbook/actions'
+import type { Resource } from '#/data/resources'
 import type {
+  Answer,
+  ChoicePrompt,
+  DatePrompt,
+  InfoList,
+  MatrixPrompt,
   PickPrompt,
+  Prompt,
+  SectionAnswers,
+  TablePrompt,
   TextPrompt,
+  WorkbookAnswers,
   WorkbookModule,
   WorkbookSection,
 } from '#/data/workbook'
-import { MODULES } from '#/data/workbook'
-import type { FormEvent } from 'react'
-import { useState } from 'react'
+import {
+  MAX_CELL_LENGTH,
+  MAX_OWN_OPTION_LENGTH,
+  MAX_PICKS,
+  MAX_TEXT_LENGTH,
+  MODULES,
+  sectionPrompts,
+} from '#/data/workbook'
+import type { FormEvent, ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-/** Free text, or the options picked for a pick prompt. */
-type Answer = string | string[]
-type Answers = Record<string, Answer | undefined>
 /** A new answer, or a function that builds it from the latest one. */
 type AnswerUpdate = Answer | ((prev: Answer | undefined) => Answer)
-type OnAnswer = (promptId: string, update: AnswerUpdate) => void
+
+/** How long to wait after the last change before saving. */
+const SAVE_DELAY_MS = 1000
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 // Same look as the admin forms' fields and ghost button.
 const INPUT =
@@ -23,17 +42,17 @@ const INPUT =
 const GHOST_BUTTON =
   'inline-flex min-h-11 cursor-pointer items-center justify-center rounded border-[1.5px] border-yale-blue bg-paper px-4.5 py-2.5 leading-tight font-semibold text-yale-blue hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-paper'
 
-export function Workbook() {
-  // Answers by prompt id.
-  // TODO: save to the backend instead of keeping them in memory
-  const [answers, setAnswers] = useState<Answers>({})
-  const setAnswer: OnAnswer = (promptId, update) =>
-    setAnswers((prev) => ({
-      ...prev,
-      [promptId]:
-        typeof update === 'function' ? update(prev[promptId]) : update,
-    }))
-
+export function Workbook({
+  savedAnswers,
+  loadError,
+  resources,
+}: {
+  savedAnswers: WorkbookAnswers
+  /** Set when the saved answers couldn't be loaded. */
+  loadError: boolean
+  /** The Resources page's links, or null if they couldn't be loaded. */
+  resources: Resource[] | null
+}) {
   return (
     <main className="mx-auto max-w-page px-4 pt-6 pb-12 md:px-10 md:pt-10 md:pb-18">
       <div className="mb-7 max-w-195">
@@ -44,29 +63,36 @@ export function Workbook() {
       </div>
       <PrivacyNote />
 
-      {/* TODO: a way to move between workbook sections, once there are more of them */}
-      <div className="grid gap-12">
-        {MODULES.map((module) => (
-          <ModuleBlock
-            key={module.id}
-            module={module}
-            answers={answers}
-            onAnswer={setAnswer}
-          />
-        ))}
-      </div>
+      {/* Without the saved answers, saving would overwrite them, so don't show the form. */}
+      {loadError ? (
+        <p role="alert" className="rounded bg-wash px-4 py-3">
+          Your answers couldn’t be loaded right now. Try again in a few minutes.
+        </p>
+      ) : (
+        // TODO: a way to move between workbook sections, once there are more of them
+        <div className="grid gap-12">
+          {MODULES.map((module) => (
+            <ModuleBlock
+              key={module.id}
+              module={module}
+              savedAnswers={savedAnswers}
+              resources={resources}
+            />
+          ))}
+        </div>
+      )}
     </main>
   )
 }
 
 function ModuleBlock({
   module,
-  answers,
-  onAnswer,
+  savedAnswers,
+  resources,
 }: {
   module: WorkbookModule
-  answers: Answers
-  onAnswer: OnAnswer
+  savedAnswers: WorkbookAnswers
+  resources: Resource[] | null
 }) {
   const headingId = `module-${module.id}`
 
@@ -88,8 +114,8 @@ function ModuleBlock({
           <SectionCard
             key={section.id}
             section={section}
-            answers={answers}
-            onAnswer={onAnswer}
+            savedAnswers={savedAnswers[section.id] ?? {}}
+            resources={resources}
           />
         ))}
       </div>
@@ -99,14 +125,38 @@ function ModuleBlock({
 
 function SectionCard({
   section,
-  answers,
-  onAnswer,
+  savedAnswers,
+  resources,
 }: {
   section: WorkbookSection
-  answers: Answers
-  onAnswer: OnAnswer
+  savedAnswers: SectionAnswers
+  resources: Resource[] | null
 }) {
   const headingId = `section-${section.id}`
+  const [answers, setAnswers] = useState(savedAnswers)
+  // The latest answers, for building the next one in event handlers. Quick
+  // clicks can come before a re-render, when `answers` is still the old one.
+  const latest = useRef(savedAnswers)
+  const { status, queueSave, saveNow } = useAutosave(section.id)
+
+  const onAnswer = (promptId: string, update: AnswerUpdate) => {
+    const answer =
+      typeof update === 'function' ? update(latest.current[promptId]) : update
+    latest.current = { ...latest.current, [promptId]: answer }
+    setAnswers(latest.current)
+    queueSave(promptId, answer)
+  }
+
+  const resourceBox = section.resources && (
+    <ResourceBox
+      title={section.resources.title}
+      items={
+        resources?.filter((r) => r.topic === section.resources?.topic) ?? null
+      }
+      footnote={section.resources.footnote}
+    />
+  )
+  const resourcesAfter = section.resources?.placement === 'after'
 
   return (
     <section
@@ -124,30 +174,335 @@ function SectionCard({
       {section.description && (
         <p className="mb-5 text-pretty text-ink-2">{section.description}</p>
       )}
-      {section.prompts.map((prompt) => {
-        const answer = answers[prompt.id]
-        return prompt.kind === 'text' ? (
-          <TextField
-            key={prompt.id}
-            prompt={prompt}
-            value={typeof answer === 'string' ? answer : ''}
-            onChange={(value) => onAnswer(prompt.id, value)}
-          />
-        ) : (
-          <PickField
-            key={prompt.id}
-            prompt={prompt}
-            value={Array.isArray(answer) ? answer : []}
-            onChange={(update) =>
-              onAnswer(prompt.id, (prev) =>
-                update(Array.isArray(prev) ? prev : []),
-              )
-            }
-          />
-        )
-      })}
-      {/* TODO: "Saved" status and Previous/Next section buttons, once answers are saved */}
+      {section.lists && <InfoLists lists={section.lists} />}
+      {!resourcesAfter && resourceBox}
+      {section.prompts && (
+        <PromptList
+          prompts={section.prompts}
+          answers={answers}
+          onAnswer={onAnswer}
+        />
+      )}
+      {section.parts?.map((part, index) => (
+        <div
+          key={part.ref}
+          className={
+            index > 0 || section.prompts || section.lists
+              ? 'mt-6 border-t border-card-line pt-5'
+              : ''
+          }
+        >
+          {part.when && (
+            <p className="mb-1 text-label-sm font-semibold tracking-label text-ink-2 uppercase">
+              {part.when}
+            </p>
+          )}
+          <h4 className="mb-3 text-task-title font-bold text-balance">
+            {part.title}
+          </h4>
+          {part.description && (
+            <p className="-mt-1.5 mb-4 text-pretty text-ink-2">
+              {part.description}
+            </p>
+          )}
+          {part.lists && <InfoLists lists={part.lists} />}
+          {part.prompts && (
+            <PromptList
+              prompts={part.prompts}
+              answers={answers}
+              onAnswer={onAnswer}
+            />
+          )}
+          {part.note && <p className="mt-6 text-pretty">{part.note}</p>}
+        </div>
+      ))}
+      {section.note && (
+        <p className="my-6 text-pretty">
+          {section.note.text}{' '}
+          <ExternalLink url={section.note.link.url}>
+            {section.note.link.label}
+          </ExternalLink>
+          .
+        </p>
+      )}
+      {resourcesAfter && resourceBox}
+      {section.footnote && (
+        <p className="mt-6 text-caption text-pretty text-ink-2">
+          {section.footnote}
+        </p>
+      )}
+      {sectionPrompts(section).length > 0 && (
+        <SaveMessage status={status} onRetry={saveNow} />
+      )}
+      {/* TODO: Previous/Next section buttons */}
     </section>
+  )
+}
+
+/** Bulleted lists to read, each with an optional heading. */
+function InfoLists({ lists }: { lists: InfoList[] }) {
+  return lists.map((list, index) => (
+    <div key={list.heading ?? index} className="mb-5">
+      {list.heading && <h5 className="mb-1 font-semibold">{list.heading}</h5>}
+      <ul className="grid list-disc gap-1 pl-5 text-pretty marker:text-ink-2">
+        {list.items.map((item) =>
+          typeof item === 'string' ? (
+            <li key={item}>{item}</li>
+          ) : (
+            <li key={item.text}>
+              <ExternalLink url={item.url}>{item.text}</ExternalLink>
+            </li>
+          ),
+        )}
+      </ul>
+    </div>
+  ))
+}
+
+/** Links from one topic of the Resources page. */
+function ResourceBox({
+  title,
+  items,
+  footnote,
+}: {
+  title: string
+  /** null if the resources couldn't be loaded. */
+  items: Resource[] | null
+  footnote?: string
+}) {
+  return (
+    <div className="my-6 rounded bg-wash px-4 py-4 md:px-5">
+      <h4 className="mb-3 text-task-title font-bold text-balance">{title}</h4>
+      {items === null ? (
+        <p className="text-small text-ink-2">
+          These resources couldn’t be loaded right now.
+        </p>
+      ) : (
+        <ul className="grid gap-x-8 gap-y-3 md:grid-cols-2">
+          {items.map((resource) => (
+            <li key={resource.id}>
+              <ExternalLink
+                url={resource.url}
+                className="font-semibold text-pretty"
+              >
+                {resource.name}
+              </ExternalLink>
+              {resource.description && (
+                <p className="mt-0.5 text-small text-pretty text-ink-2">
+                  {resource.description}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {footnote && (
+        <p className="mt-4 text-small text-pretty text-ink-2">{footnote}</p>
+      )}
+    </div>
+  )
+}
+
+/** A link that opens in a new tab, so the workbook stays open. */
+function ExternalLink({
+  url,
+  className,
+  children,
+}: {
+  url: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+    >
+      {children}
+      <span aria-hidden="true"> ↗</span>
+      <span className="sr-only"> (opens in a new tab)</span>
+    </a>
+  )
+}
+
+/** The fields for some prompts, leaving out any whose `showIf` doesn't match. */
+function PromptList({
+  prompts,
+  answers,
+  onAnswer,
+}: {
+  prompts: Prompt[]
+  answers: SectionAnswers
+  onAnswer: (promptId: string, update: AnswerUpdate) => void
+}) {
+  return prompts
+    .filter(
+      (prompt) =>
+        !prompt.showIf ||
+        answers[prompt.showIf.promptId] === prompt.showIf.answer,
+    )
+    .map((prompt) => {
+      const answer = answers[prompt.id]
+      switch (prompt.kind) {
+        case 'text':
+          return (
+            <TextField
+              key={prompt.id}
+              prompt={prompt}
+              value={typeof answer === 'string' ? answer : ''}
+              onChange={(value) => onAnswer(prompt.id, value)}
+            />
+          )
+        case 'date':
+          return (
+            <DateField
+              key={prompt.id}
+              prompt={prompt}
+              value={typeof answer === 'string' ? answer : ''}
+              onChange={(value) => onAnswer(prompt.id, value)}
+            />
+          )
+        case 'choice':
+          return (
+            <ChoiceField
+              key={prompt.id}
+              prompt={prompt}
+              value={typeof answer === 'string' ? answer : ''}
+              onChange={(value) => onAnswer(prompt.id, value)}
+            />
+          )
+        case 'pick':
+          return (
+            <PickField
+              key={prompt.id}
+              prompt={prompt}
+              value={Array.isArray(answer) ? answer : []}
+              onChange={(update) =>
+                onAnswer(prompt.id, (prev) =>
+                  update(Array.isArray(prev) ? prev : []),
+                )
+              }
+            />
+          )
+        case 'table':
+          return (
+            <TableField
+              key={prompt.id}
+              prompt={prompt}
+              value={Array.isArray(answer) ? answer : []}
+              onChange={(index, text) =>
+                onAnswer(prompt.id, (prev) => {
+                  const cells = Array.from(
+                    { length: prompt.rows * prompt.columns.length },
+                    (_, i) => (Array.isArray(prev) ? prev[i] : undefined) ?? '',
+                  )
+                  cells[index] = text
+                  return cells
+                })
+              }
+            />
+          )
+        case 'matrix':
+          return (
+            <MatrixField
+              key={prompt.id}
+              prompt={prompt}
+              answers={answers}
+              onChange={(rowId, option) => onAnswer(rowId, option)}
+            />
+          )
+      }
+    })
+}
+
+/**
+ * Saves a section's answers a moment after the last change. Answers that
+ * don't save are kept and sent again with the next save.
+ */
+function useAutosave(sectionId: string) {
+  const [status, setStatus] = useState<SaveStatus>('idle')
+  // Answers that haven't been saved yet, by prompt id.
+  const unsaved = useRef(new Map<string, Answer>())
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const saveNow = useCallback(async () => {
+    clearTimeout(timer.current)
+    if (unsaved.current.size === 0) return
+    const sending = new Map(unsaved.current)
+    setStatus('saving')
+
+    let ok = false
+    try {
+      ok = (await saveAnswers(sectionId, Object.fromEntries(sending))).ok
+    } catch (error) {
+      // e.g. offline
+      console.error('Saving workbook answers failed:', error)
+    }
+    if (!ok) {
+      setStatus('error')
+      return
+    }
+    // Forget what was saved, unless it changed again while saving.
+    for (const [promptId, answer] of sending) {
+      if (unsaved.current.get(promptId) === answer) {
+        unsaved.current.delete(promptId)
+      }
+    }
+    if (unsaved.current.size === 0) setStatus('saved')
+  }, [sectionId])
+
+  const queueSave = useCallback(
+    (promptId: string, answer: Answer) => {
+      unsaved.current.set(promptId, answer)
+      setStatus('saving')
+      clearTimeout(timer.current)
+      timer.current = setTimeout(() => void saveNow(), SAVE_DELAY_MS)
+    },
+    [saveNow],
+  )
+
+  // Save right away when leaving the page for another one in the app.
+  useEffect(() => () => void saveNow(), [saveNow])
+
+  // Ask before closing the tab or reloading while answers aren't saved.
+  useEffect(() => {
+    if (status !== 'saving' && status !== 'error') return
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [status])
+
+  return { status, queueSave, saveNow }
+}
+
+function SaveMessage({
+  status,
+  onRetry,
+}: {
+  status: SaveStatus
+  onRetry: () => void
+}) {
+  if (status === 'error') {
+    return (
+      <div
+        role="alert"
+        className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2"
+      >
+        <p className="font-semibold text-late">Your changes didn’t save.</p>
+        <button type="button" onClick={onRetry} className={GHOST_BUTTON}>
+          Try again
+        </button>
+      </div>
+    )
+  }
+  // Takes up its line even when empty, so cards below don't jump when it appears.
+  return (
+    <p className="mt-5 min-h-[1lh] text-small text-ink-2">
+      {status === 'saving' && 'Saving…'}
+      {status === 'saved' && 'Saved'}
+    </p>
   )
 }
 
@@ -195,29 +550,281 @@ function TextField({
         )}
         {prompt.question}
         {prompt.optional && (
-          <span className="text-small font-normal text-ink-2"> (optional)</span>
+          <span className="text-small font-normal text-ink-2">
+            {' '}
+            ({prompt.optional})
+          </span>
         )}
       </label>
       {prompt.hint && (
-        <p id={hintId} className="mb-2 text-small text-ink-2">
+        <p id={hintId} className="mb-2 text-small text-pretty text-ink-2">
           {prompt.hint}
         </p>
       )}
-      <textarea
-        id={inputId}
-        rows={3}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-describedby={prompt.hint ? hintId : undefined}
-        className={`${INPUT} block min-h-21 resize-y`}
-      />
+      {prompt.short ? (
+        <input
+          id={inputId}
+          type="text"
+          maxLength={MAX_TEXT_LENGTH}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-describedby={prompt.hint ? hintId : undefined}
+          className={`${INPUT} max-w-130`}
+        />
+      ) : (
+        <textarea
+          id={inputId}
+          rows={3}
+          maxLength={MAX_TEXT_LENGTH}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-describedby={prompt.hint ? hintId : undefined}
+          className={`${INPUT} block min-h-21 resize-y`}
+        />
+      )}
+      {prompt.source && <Source text={prompt.source} />}
     </div>
   )
 }
 
+function DateField({
+  prompt,
+  value,
+  onChange,
+}: {
+  prompt: DatePrompt
+  /** YYYY-MM-DD, or '' for none. */
+  value: string
+  onChange: (value: string) => void
+}) {
+  const inputId = `prompt-${prompt.id}`
+  const hintId = `${inputId}-hint`
+
+  return (
+    <div className="mb-6 last:mb-0">
+      <label
+        htmlFor={inputId}
+        className="mb-1.5 block leading-[1.4] font-semibold text-pretty"
+      >
+        {prompt.question}
+      </label>
+      {prompt.hint && (
+        <p id={hintId} className="mb-2 text-small text-pretty text-ink-2">
+          {prompt.hint}
+        </p>
+      )}
+      <input
+        id={inputId}
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-describedby={prompt.hint ? hintId : undefined}
+        className={`${INPUT} w-auto`}
+      />
+      {prompt.source && <Source text={prompt.source} />}
+    </div>
+  )
+}
+
+/** Guidance under a question that's a legend or a heading. */
+function Hint({ text }: { text?: string }) {
+  return text ? (
+    <p className="mb-2 text-small text-pretty text-ink-2">{text}</p>
+  ) : null
+}
+
+/** Where a prompt's content comes from, under the field. */
+function Source({ text }: { text: string }) {
+  return <p className="mt-3 text-caption text-pretty text-ink-2">{text}</p>
+}
+
+// Table and matrix columns, from md up. Sized for the workbook's tables: two
+// columns (a short one, then a longer one), and a matrix with four options.
+const TABLE_COLUMNS = 'md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]'
+const MATRIX_COLUMNS = 'md:grid-cols-[minmax(0,1fr)_repeat(4,6.5rem)]'
+
 /**
- * Toggle buttons for each option, plus an optional box to add your own. Your
- * own options show up as selected buttons; unselecting one removes it.
+ * A small table of text boxes. On wider screens the column names are shown
+ * once, above the rows; on phones each box has its own label.
+ */
+function TableField({
+  prompt,
+  value,
+  onChange,
+}: {
+  prompt: TablePrompt
+  /** The cells, row by row. */
+  value: string[]
+  onChange: (index: number, text: string) => void
+}) {
+  const fieldId = `prompt-${prompt.id}`
+
+  return (
+    <fieldset className="mb-6 min-w-0 last:mb-0">
+      <legend className="sr-only">{prompt.question}</legend>
+      <Hint text={prompt.hint} />
+      <div
+        aria-hidden="true"
+        className={`mb-1.5 hidden gap-3 font-semibold md:grid ${TABLE_COLUMNS}`}
+      >
+        {prompt.columns.map((column) => (
+          <span key={column}>{column}</span>
+        ))}
+      </div>
+      <div className="grid gap-4 md:gap-3">
+        {Array.from({ length: prompt.rows }, (_, row) => (
+          <div
+            key={row}
+            className={`grid gap-3 border-t border-card-line pt-4 first:border-0 first:pt-0 md:border-0 md:pt-0 ${TABLE_COLUMNS}`}
+          >
+            {prompt.columns.map((column, col) => {
+              const index = row * prompt.columns.length + col
+              const inputId = `${fieldId}-${index}`
+              return (
+                <div key={column} className="grid content-start gap-1.5">
+                  <label
+                    htmlFor={inputId}
+                    className="text-small font-semibold md:sr-only"
+                  >
+                    {column}
+                    <span className="sr-only">, row {row + 1}</span>
+                  </label>
+                  <textarea
+                    id={inputId}
+                    rows={2}
+                    maxLength={MAX_CELL_LENGTH}
+                    value={value[index] ?? ''}
+                    onChange={(e) => onChange(index, e.target.value)}
+                    className={`${INPUT} block resize-y`}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+      {prompt.source && <Source text={prompt.source} />}
+    </fieldset>
+  )
+}
+
+/**
+ * One choice per row, grouped. On wider screens it's a grid with the options
+ * as column headers; on phones each row lists its options with labels.
+ */
+function MatrixField({
+  prompt,
+  answers,
+  onChange,
+}: {
+  prompt: MatrixPrompt
+  /** The section's answers. Each row's answer is under its id. */
+  answers: SectionAnswers
+  onChange: (rowId: string, option: string) => void
+}) {
+  const fieldId = `prompt-${prompt.id}`
+
+  return (
+    <div role="group" aria-labelledby={fieldId} className="mb-6 last:mb-0">
+      <p id={fieldId} className="mb-3 leading-[1.4] font-semibold text-pretty">
+        {prompt.question}
+      </p>
+      <Hint text={prompt.hint} />
+      <div
+        aria-hidden="true"
+        className={`hidden items-end gap-x-2 border-b-2 border-ink pb-2 text-small font-semibold md:grid ${MATRIX_COLUMNS}`}
+      >
+        <span>{prompt.rowHeader}</span>
+        {prompt.options.map((option) => (
+          <span key={option} className="text-center text-balance">
+            {option}
+          </span>
+        ))}
+      </div>
+      {prompt.groups.map((group) => (
+        <div key={group.label} className="mt-5">
+          <h4 className="mb-1 text-label font-semibold tracking-label text-ink-2 uppercase">
+            {group.label}
+          </h4>
+          {group.rows.map((row) => (
+            <fieldset
+              key={row.id}
+              className="min-w-0 border-t border-card-line py-2.5"
+            >
+              <legend className="sr-only">{row.label}</legend>
+              <div className={`items-center gap-x-2 md:grid ${MATRIX_COLUMNS}`}>
+                <p aria-hidden="true" className="mb-1.5 text-pretty md:mb-0">
+                  {row.label}
+                </p>
+                {prompt.options.map((option) => (
+                  <label
+                    key={option}
+                    className="mr-5 inline-flex cursor-pointer items-center gap-2 py-1 md:mr-0 md:flex md:justify-center"
+                  >
+                    <input
+                      type="radio"
+                      name={`${fieldId}-${row.id}`}
+                      value={option}
+                      checked={answers[row.id] === option}
+                      onChange={() => onChange(row.id, option)}
+                      className="size-5.5 shrink-0 cursor-pointer accent-yale-blue"
+                    />
+                    <span className="text-small md:sr-only">{option}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ))}
+        </div>
+      ))}
+      {prompt.source && <Source text={prompt.source} />}
+    </div>
+  )
+}
+
+/** One option, as radio buttons. */
+function ChoiceField({
+  prompt,
+  value,
+  onChange,
+}: {
+  prompt: ChoicePrompt
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <fieldset className="mb-6 min-w-0 last:mb-0">
+      <legend className="mb-2 leading-[1.4] font-semibold text-pretty">
+        {prompt.question}
+      </legend>
+      <Hint text={prompt.hint} />
+      <div className="grid gap-2">
+        {prompt.options.map((option) => (
+          <label
+            key={option}
+            className="flex w-fit cursor-pointer items-start gap-2.5"
+          >
+            <input
+              type="radio"
+              name={`prompt-${prompt.id}`}
+              value={option}
+              checked={value === option}
+              onChange={() => onChange(option)}
+              className="mt-0.75 size-5.5 shrink-0 cursor-pointer accent-yale-blue"
+            />
+            {option}
+          </label>
+        ))}
+      </div>
+      {prompt.source && <Source text={prompt.source} />}
+    </fieldset>
+  )
+}
+
+/**
+ * Each option as a toggle button (or a checkbox, for a checklist), plus an
+ * optional box to add your own. Your own options show up selected;
+ * unselecting one removes it.
  */
 function PickField({
   prompt,
@@ -230,15 +837,17 @@ function PickField({
   onChange: (update: (prev: string[]) => string[]) => void
 }) {
   const [own, setOwn] = useState('')
-  const full = value.length >= prompt.max
+  const max = prompt.max ?? MAX_PICKS
+  const full = value.length >= max
   const ownValues = value.filter((v) => !prompt.options.includes(v))
   const ownId = `prompt-${prompt.id}-own`
+  const checklist = prompt.layout === 'checklist'
 
   const toggle = (option: string) =>
     onChange((prev) =>
       prev.includes(option)
         ? prev.filter((v) => v !== option)
-        : prev.length >= prompt.max
+        : prev.length >= max
           ? prev
           : [...prev, option],
     )
@@ -248,7 +857,7 @@ function PickField({
     const typed = own.trim()
     if (!typed) return
     onChange((prev) => {
-      if (prev.length >= prompt.max) return prev
+      if (prev.length >= max) return prev
       // Reuse an existing option if it matches, ignoring case.
       const option =
         [...prompt.options, ...prev].find(
@@ -261,42 +870,80 @@ function PickField({
 
   return (
     <fieldset className="mb-6 min-w-0 last:mb-0">
-      <legend className="mb-1.5 leading-[1.4] font-semibold text-pretty">
+      <legend className="mb-2 leading-[1.4] font-semibold text-pretty">
         {prompt.question}
       </legend>
-      <p aria-live="polite" className="mb-2 text-small text-ink-2">
-        {value.length} chosen · up to {prompt.max}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {[...prompt.options, ...ownValues].map((option) => {
-          const selected = value.includes(option)
-          return (
-            <button
-              key={option}
-              type="button"
-              aria-pressed={selected}
-              disabled={full && !selected}
-              onClick={() => toggle(option)}
-              className="cursor-pointer rounded-full border-[1.5px] border-field-line bg-paper px-3 py-1.75 text-small leading-[1.2] text-ink disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:border-yale-blue aria-pressed:bg-yale-blue aria-pressed:font-semibold aria-pressed:text-paper"
-            >
-              {selected && <span aria-hidden="true">✓ </span>}
-              {option}
-            </button>
-          )
-        })}
-      </div>
+      <Hint text={prompt.hint} />
+      {prompt.max !== undefined && (
+        <p aria-live="polite" className="-mt-0.5 mb-2 text-small text-ink-2">
+          {value.length} chosen · up to {prompt.max}
+        </p>
+      )}
+      {checklist ? (
+        <ul className="grid gap-2">
+          {[...prompt.options, ...ownValues].map((option) => {
+            const selected = value.includes(option)
+            return (
+              <li key={option}>
+                <label className="flex w-fit cursor-pointer items-start gap-2.5 text-pretty has-disabled:cursor-not-allowed has-disabled:opacity-45">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    disabled={full && !selected}
+                    onChange={() => toggle(option)}
+                    className="mt-0.75 size-5.5 shrink-0 cursor-pointer accent-yale-blue disabled:cursor-not-allowed"
+                  />
+                  {option}
+                </label>
+                {/* Outside the label, so following it doesn't tick the box */}
+                {prompt.links?.[option] && (
+                  <ExternalLink
+                    url={prompt.links[option]}
+                    className="ml-8 text-small"
+                  >
+                    Website
+                    <span className="sr-only">: {option}</span>
+                  </ExternalLink>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {[...prompt.options, ...ownValues].map((option) => {
+            const selected = value.includes(option)
+            return (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={selected}
+                disabled={full && !selected}
+                onClick={() => toggle(option)}
+                className="cursor-pointer rounded-full border-[1.5px] border-field-line bg-paper px-3 py-1.75 text-small leading-[1.2] text-ink disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:border-yale-blue aria-pressed:bg-yale-blue aria-pressed:font-semibold aria-pressed:text-paper"
+              >
+                {selected && <span aria-hidden="true">✓ </span>}
+                {option}
+              </button>
+            )
+          })}
+        </div>
+      )}
       {prompt.allowOwn && (
         <form
           onSubmit={addOwn}
           className="mt-4 flex flex-wrap items-end gap-2.5"
         >
-          <div className="grid w-full max-w-80 gap-1.5">
+          <div
+            className={`grid w-full gap-1.5 ${checklist ? 'max-w-130' : 'max-w-80'}`}
+          >
             <label htmlFor={ownId} className="text-small font-semibold">
               Add your own
             </label>
             <input
               id={ownId}
               type="text"
+              maxLength={MAX_OWN_OPTION_LENGTH}
               value={own}
               onChange={(e) => setOwn(e.target.value)}
               disabled={full}
@@ -312,9 +959,7 @@ function PickField({
           </button>
         </form>
       )}
-      {prompt.hint && (
-        <p className="mt-3 text-caption text-ink-2">{prompt.hint}</p>
-      )}
+      {prompt.source && <Source text={prompt.source} />}
     </fieldset>
   )
 }

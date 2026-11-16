@@ -3,23 +3,35 @@
 import type { Answer, PickPrompt, Prompt } from '#/data/workbook'
 import {
   MAX_OWN_OPTION_LENGTH,
+  MAX_PICKS,
   MAX_TEXT_LENGTH,
   MODULES,
+  sectionPrompts,
 } from '#/data/workbook'
 import { createClient } from '#/lib/supabase/server'
 
 /** `value` as an answer to `prompt`, or null if it isn't a valid one. */
 function cleanAnswer(prompt: Prompt, value: unknown): Answer | null {
-  if (prompt.kind === 'text') {
-    return typeof value === 'string' && value.length <= MAX_TEXT_LENGTH
-      ? value
-      : null
+  switch (prompt.kind) {
+    case 'text':
+      return typeof value === 'string' && value.length <= MAX_TEXT_LENGTH
+        ? value
+        : null
+    case 'choice':
+      // '' clears it.
+      return typeof value === 'string' &&
+        (value === '' || prompt.options.includes(value))
+        ? value
+        : null
+    case 'pick':
+      return cleanPicks(prompt, value)
   }
-  return cleanPicks(prompt, value)
 }
 
 function cleanPicks(prompt: PickPrompt, value: unknown): string[] | null {
-  if (!Array.isArray(value) || value.length > prompt.max) return null
+  if (!Array.isArray(value) || value.length > (prompt.max ?? MAX_PICKS)) {
+    return null
+  }
   const picks: string[] = []
   for (const item of value) {
     if (typeof item !== 'string') return null
@@ -57,8 +69,9 @@ export async function saveAnswers(
 
   const toSave: { prompt_id: string; answer: Answer }[] = []
   const toRemove: string[] = []
+  const prompts = sectionPrompts(section)
   for (const [promptId, value] of Object.entries(answers)) {
-    const prompt = section.prompts.find((p) => p.id === promptId)
+    const prompt = prompts.find((p) => p.id === promptId)
     const answer = prompt ? cleanAnswer(prompt, value) : null
     if (answer === null) return { ok: false }
     if (isEmpty(answer)) toRemove.push(promptId)

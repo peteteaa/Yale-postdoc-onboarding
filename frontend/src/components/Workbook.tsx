@@ -3,7 +3,9 @@
 import { saveAnswers } from '#/app/workbook/actions'
 import type {
   Answer,
+  ChoicePrompt,
   PickPrompt,
+  Prompt,
   SectionAnswers,
   TextPrompt,
   WorkbookAnswers,
@@ -12,6 +14,7 @@ import type {
 } from '#/data/workbook'
 import {
   MAX_OWN_OPTION_LENGTH,
+  MAX_PICKS,
   MAX_TEXT_LENGTH,
   MODULES,
 } from '#/data/workbook'
@@ -144,32 +147,100 @@ function SectionCard({
       {section.description && (
         <p className="mb-5 text-pretty text-ink-2">{section.description}</p>
       )}
-      {section.prompts.map((prompt) => {
-        const answer = answers[prompt.id]
-        return prompt.kind === 'text' ? (
-          <TextField
-            key={prompt.id}
-            prompt={prompt}
-            value={typeof answer === 'string' ? answer : ''}
-            onChange={(value) => onAnswer(prompt.id, value)}
+      {section.prompts && (
+        <PromptList
+          prompts={section.prompts}
+          answers={answers}
+          onAnswer={onAnswer}
+        />
+      )}
+      {section.parts?.map((part, index) => (
+        <div
+          key={part.ref}
+          className={
+            index > 0 || section.prompts
+              ? 'mt-6 border-t border-card-line pt-5'
+              : ''
+          }
+        >
+          {part.when && (
+            <p className="mb-1 text-label-sm font-semibold tracking-label text-ink-2 uppercase">
+              {part.when}
+            </p>
+          )}
+          <h4 className="mb-3 text-task-title font-bold text-balance">
+            {part.title}
+          </h4>
+          {part.description && (
+            <p className="-mt-1.5 mb-4 text-pretty text-ink-2">
+              {part.description}
+            </p>
+          )}
+          <PromptList
+            prompts={part.prompts}
+            answers={answers}
+            onAnswer={onAnswer}
           />
-        ) : (
-          <PickField
-            key={prompt.id}
-            prompt={prompt}
-            value={Array.isArray(answer) ? answer : []}
-            onChange={(update) =>
-              onAnswer(prompt.id, (prev) =>
-                update(Array.isArray(prev) ? prev : []),
-              )
-            }
-          />
-        )
-      })}
+        </div>
+      ))}
       <SaveMessage status={status} onRetry={saveNow} />
       {/* TODO: Previous/Next section buttons */}
     </section>
   )
+}
+
+/** The fields for some prompts, leaving out any whose `showIf` doesn't match. */
+function PromptList({
+  prompts,
+  answers,
+  onAnswer,
+}: {
+  prompts: Prompt[]
+  answers: SectionAnswers
+  onAnswer: (promptId: string, update: AnswerUpdate) => void
+}) {
+  return prompts
+    .filter(
+      (prompt) =>
+        !prompt.showIf ||
+        answers[prompt.showIf.promptId] === prompt.showIf.answer,
+    )
+    .map((prompt) => {
+      const answer = answers[prompt.id]
+      switch (prompt.kind) {
+        case 'text':
+          return (
+            <TextField
+              key={prompt.id}
+              prompt={prompt}
+              value={typeof answer === 'string' ? answer : ''}
+              onChange={(value) => onAnswer(prompt.id, value)}
+            />
+          )
+        case 'choice':
+          return (
+            <ChoiceField
+              key={prompt.id}
+              prompt={prompt}
+              value={typeof answer === 'string' ? answer : ''}
+              onChange={(value) => onAnswer(prompt.id, value)}
+            />
+          )
+        case 'pick':
+          return (
+            <PickField
+              key={prompt.id}
+              prompt={prompt}
+              value={Array.isArray(answer) ? answer : []}
+              onChange={(update) =>
+                onAnswer(prompt.id, (prev) =>
+                  update(Array.isArray(prev) ? prev : []),
+                )
+              }
+            />
+          )
+      }
+    })
 }
 
 /**
@@ -305,7 +376,10 @@ function TextField({
         )}
         {prompt.question}
         {prompt.optional && (
-          <span className="text-small font-normal text-ink-2"> (optional)</span>
+          <span className="text-small font-normal text-ink-2">
+            {' '}
+            ({prompt.optional})
+          </span>
         )}
       </label>
       {prompt.hint && (
@@ -326,9 +400,50 @@ function TextField({
   )
 }
 
+/** One option, as radio buttons. */
+function ChoiceField({
+  prompt,
+  value,
+  onChange,
+}: {
+  prompt: ChoicePrompt
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <fieldset className="mb-6 min-w-0 last:mb-0">
+      <legend className="mb-2 leading-[1.4] font-semibold text-pretty">
+        {prompt.question}
+      </legend>
+      <div className="grid gap-2">
+        {prompt.options.map((option) => (
+          <label
+            key={option}
+            className="flex w-fit cursor-pointer items-start gap-2.5"
+          >
+            <input
+              type="radio"
+              name={`prompt-${prompt.id}`}
+              value={option}
+              checked={value === option}
+              onChange={() => onChange(option)}
+              className="mt-0.75 size-5.5 shrink-0 cursor-pointer accent-yale-blue"
+            />
+            {option}
+          </label>
+        ))}
+      </div>
+      {prompt.hint && (
+        <p className="mt-3 text-caption text-ink-2">{prompt.hint}</p>
+      )}
+    </fieldset>
+  )
+}
+
 /**
- * Toggle buttons for each option, plus an optional box to add your own. Your
- * own options show up as selected buttons; unselecting one removes it.
+ * Each option as a toggle button (or a checkbox, for a checklist), plus an
+ * optional box to add your own. Your own options show up selected;
+ * unselecting one removes it.
  */
 function PickField({
   prompt,
@@ -341,15 +456,17 @@ function PickField({
   onChange: (update: (prev: string[]) => string[]) => void
 }) {
   const [own, setOwn] = useState('')
-  const full = value.length >= prompt.max
+  const max = prompt.max ?? MAX_PICKS
+  const full = value.length >= max
   const ownValues = value.filter((v) => !prompt.options.includes(v))
   const ownId = `prompt-${prompt.id}-own`
+  const checklist = prompt.layout === 'checklist'
 
   const toggle = (option: string) =>
     onChange((prev) =>
       prev.includes(option)
         ? prev.filter((v) => v !== option)
-        : prev.length >= prompt.max
+        : prev.length >= max
           ? prev
           : [...prev, option],
     )
@@ -359,7 +476,7 @@ function PickField({
     const typed = own.trim()
     if (!typed) return
     onChange((prev) => {
-      if (prev.length >= prompt.max) return prev
+      if (prev.length >= max) return prev
       // Reuse an existing option if it matches, ignoring case.
       const option =
         [...prompt.options, ...prev].find(
@@ -372,36 +489,62 @@ function PickField({
 
   return (
     <fieldset className="mb-6 min-w-0 last:mb-0">
-      <legend className="mb-1.5 leading-[1.4] font-semibold text-pretty">
+      <legend className="mb-2 leading-[1.4] font-semibold text-pretty">
         {prompt.question}
       </legend>
-      <p aria-live="polite" className="mb-2 text-small text-ink-2">
-        {value.length} chosen · up to {prompt.max}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {[...prompt.options, ...ownValues].map((option) => {
-          const selected = value.includes(option)
-          return (
-            <button
-              key={option}
-              type="button"
-              aria-pressed={selected}
-              disabled={full && !selected}
-              onClick={() => toggle(option)}
-              className="cursor-pointer rounded-full border-[1.5px] border-field-line bg-paper px-3 py-1.75 text-small leading-[1.2] text-ink disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:border-yale-blue aria-pressed:bg-yale-blue aria-pressed:font-semibold aria-pressed:text-paper"
-            >
-              {selected && <span aria-hidden="true">✓ </span>}
-              {option}
-            </button>
-          )
-        })}
-      </div>
+      {prompt.max !== undefined && (
+        <p aria-live="polite" className="-mt-0.5 mb-2 text-small text-ink-2">
+          {value.length} chosen · up to {prompt.max}
+        </p>
+      )}
+      {checklist ? (
+        <ul className="grid gap-2">
+          {[...prompt.options, ...ownValues].map((option) => {
+            const selected = value.includes(option)
+            return (
+              <li key={option}>
+                <label className="flex w-fit cursor-pointer items-start gap-2.5 text-pretty has-disabled:cursor-not-allowed has-disabled:opacity-45">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    disabled={full && !selected}
+                    onChange={() => toggle(option)}
+                    className="mt-0.75 size-5.5 shrink-0 cursor-pointer accent-yale-blue disabled:cursor-not-allowed"
+                  />
+                  {option}
+                </label>
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {[...prompt.options, ...ownValues].map((option) => {
+            const selected = value.includes(option)
+            return (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={selected}
+                disabled={full && !selected}
+                onClick={() => toggle(option)}
+                className="cursor-pointer rounded-full border-[1.5px] border-field-line bg-paper px-3 py-1.75 text-small leading-[1.2] text-ink disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:border-yale-blue aria-pressed:bg-yale-blue aria-pressed:font-semibold aria-pressed:text-paper"
+              >
+                {selected && <span aria-hidden="true">✓ </span>}
+                {option}
+              </button>
+            )
+          })}
+        </div>
+      )}
       {prompt.allowOwn && (
         <form
           onSubmit={addOwn}
           className="mt-4 flex flex-wrap items-end gap-2.5"
         >
-          <div className="grid w-full max-w-80 gap-1.5">
+          <div
+            className={`grid w-full gap-1.5 ${checklist ? 'max-w-130' : 'max-w-80'}`}
+          >
             <label htmlFor={ownId} className="text-small font-semibold">
               Add your own
             </label>

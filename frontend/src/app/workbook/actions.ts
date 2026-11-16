@@ -1,7 +1,8 @@
 'use server'
 
-import type { Answer, PickPrompt, Prompt } from '#/data/workbook'
+import type { Answer, AnswerPrompt, PickPrompt } from '#/data/workbook'
 import {
+  MAX_CELL_LENGTH,
   MAX_OWN_OPTION_LENGTH,
   MAX_PICKS,
   MAX_TEXT_LENGTH,
@@ -11,8 +12,16 @@ import {
 import { createClient } from '#/lib/supabase/server'
 
 /** `value` as an answer to `prompt`, or null if it isn't a valid one. */
-function cleanAnswer(prompt: Prompt, value: unknown): Answer | null {
+function cleanAnswer(prompt: AnswerPrompt, value: unknown): Answer | null {
   switch (prompt.kind) {
+    case 'table':
+      return Array.isArray(value) &&
+        value.length === prompt.rows * prompt.columns.length &&
+        value.every(
+          (cell) => typeof cell === 'string' && cell.length <= MAX_CELL_LENGTH,
+        )
+        ? (value as string[])
+        : null
     case 'text':
       return typeof value === 'string' && value.length <= MAX_TEXT_LENGTH
         ? value
@@ -49,8 +58,11 @@ function cleanPicks(prompt: PickPrompt, value: unknown): string[] | null {
   return picks
 }
 
+/** Blank text, nothing picked, or a table with only blank cells. */
 const isEmpty = (answer: Answer) =>
-  typeof answer === 'string' ? answer.trim() === '' : answer.length === 0
+  typeof answer === 'string'
+    ? answer.trim() === ''
+    : answer.every((item) => item.trim() === '')
 
 /**
  * Saves the signed-in person's answers to some of one section's prompts, by

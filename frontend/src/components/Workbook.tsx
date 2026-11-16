@@ -5,15 +5,19 @@ import type { Resource } from '#/data/resources'
 import type {
   Answer,
   ChoicePrompt,
+  InfoList,
+  MatrixPrompt,
   PickPrompt,
   Prompt,
   SectionAnswers,
+  TablePrompt,
   TextPrompt,
   WorkbookAnswers,
   WorkbookModule,
   WorkbookSection,
 } from '#/data/workbook'
 import {
+  MAX_CELL_LENGTH,
   MAX_OWN_OPTION_LENGTH,
   MAX_PICKS,
   MAX_TEXT_LENGTH,
@@ -168,6 +172,7 @@ function SectionCard({
       {section.description && (
         <p className="mb-5 text-pretty text-ink-2">{section.description}</p>
       )}
+      {section.lists && <InfoLists lists={section.lists} />}
       {!resourcesAfter && resourceBox}
       {section.prompts && (
         <PromptList
@@ -180,7 +185,7 @@ function SectionCard({
         <div
           key={part.ref}
           className={
-            index > 0 || section.prompts
+            index > 0 || section.prompts || section.lists
               ? 'mt-6 border-t border-card-line pt-5'
               : ''
           }
@@ -198,11 +203,14 @@ function SectionCard({
               {part.description}
             </p>
           )}
-          <PromptList
-            prompts={part.prompts}
-            answers={answers}
-            onAnswer={onAnswer}
-          />
+          {part.lists && <InfoLists lists={part.lists} />}
+          {part.prompts && (
+            <PromptList
+              prompts={part.prompts}
+              answers={answers}
+              onAnswer={onAnswer}
+            />
+          )}
         </div>
       ))}
       {section.note && (
@@ -215,10 +223,29 @@ function SectionCard({
         </p>
       )}
       {resourcesAfter && resourceBox}
+      {section.footnote && (
+        <p className="mt-6 text-caption text-pretty text-ink-2">
+          {section.footnote}
+        </p>
+      )}
       <SaveMessage status={status} onRetry={saveNow} />
       {/* TODO: Previous/Next section buttons */}
     </section>
   )
+}
+
+/** Bulleted lists to read, each with an optional heading. */
+function InfoLists({ lists }: { lists: InfoList[] }) {
+  return lists.map((list, index) => (
+    <div key={list.heading ?? index} className="mb-5">
+      {list.heading && <h5 className="mb-1 font-semibold">{list.heading}</h5>}
+      <ul className="grid list-disc gap-1 pl-5 text-pretty marker:text-ink-2">
+        {list.items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  ))
 }
 
 /** Links from one topic of the Resources page. */
@@ -337,6 +364,33 @@ function PromptList({
                   update(Array.isArray(prev) ? prev : []),
                 )
               }
+            />
+          )
+        case 'table':
+          return (
+            <TableField
+              key={prompt.id}
+              prompt={prompt}
+              value={Array.isArray(answer) ? answer : []}
+              onChange={(index, text) =>
+                onAnswer(prompt.id, (prev) => {
+                  const cells = Array.from(
+                    { length: prompt.rows * prompt.columns.length },
+                    (_, i) => (Array.isArray(prev) ? prev[i] : undefined) ?? '',
+                  )
+                  cells[index] = text
+                  return cells
+                })
+              }
+            />
+          )
+        case 'matrix':
+          return (
+            <MatrixField
+              key={prompt.id}
+              prompt={prompt}
+              answers={answers}
+              onChange={(rowId, option) => onAnswer(rowId, option)}
             />
           )
       }
@@ -500,6 +554,152 @@ function TextField({
   )
 }
 
+// Table and matrix columns, from md up. Sized for the workbook's tables: two
+// columns (a short one, then a longer one), and a matrix with four options.
+const TABLE_COLUMNS = 'md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]'
+const MATRIX_COLUMNS = 'md:grid-cols-[minmax(0,1fr)_repeat(4,6.5rem)]'
+
+/**
+ * A small table of text boxes. On wider screens the column names are shown
+ * once, above the rows; on phones each box has its own label.
+ */
+function TableField({
+  prompt,
+  value,
+  onChange,
+}: {
+  prompt: TablePrompt
+  /** The cells, row by row. */
+  value: string[]
+  onChange: (index: number, text: string) => void
+}) {
+  const fieldId = `prompt-${prompt.id}`
+
+  return (
+    <fieldset className="mb-6 min-w-0 last:mb-0">
+      <legend className="sr-only">{prompt.question}</legend>
+      <div
+        aria-hidden="true"
+        className={`mb-1.5 hidden gap-3 font-semibold md:grid ${TABLE_COLUMNS}`}
+      >
+        {prompt.columns.map((column) => (
+          <span key={column}>{column}</span>
+        ))}
+      </div>
+      <div className="grid gap-4 md:gap-3">
+        {Array.from({ length: prompt.rows }, (_, row) => (
+          <div
+            key={row}
+            className={`grid gap-3 border-t border-card-line pt-4 first:border-0 first:pt-0 md:border-0 md:pt-0 ${TABLE_COLUMNS}`}
+          >
+            {prompt.columns.map((column, col) => {
+              const index = row * prompt.columns.length + col
+              const inputId = `${fieldId}-${index}`
+              return (
+                <div key={column} className="grid content-start gap-1.5">
+                  <label
+                    htmlFor={inputId}
+                    className="text-small font-semibold md:sr-only"
+                  >
+                    {column}
+                    <span className="sr-only">, row {row + 1}</span>
+                  </label>
+                  <textarea
+                    id={inputId}
+                    rows={2}
+                    maxLength={MAX_CELL_LENGTH}
+                    value={value[index] ?? ''}
+                    onChange={(e) => onChange(index, e.target.value)}
+                    className={`${INPUT} block resize-y`}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+      {prompt.hint && (
+        <p className="mt-3 text-caption text-ink-2">{prompt.hint}</p>
+      )}
+    </fieldset>
+  )
+}
+
+/**
+ * One choice per row, grouped. On wider screens it's a grid with the options
+ * as column headers; on phones each row lists its options with labels.
+ */
+function MatrixField({
+  prompt,
+  answers,
+  onChange,
+}: {
+  prompt: MatrixPrompt
+  /** The section's answers. Each row's answer is under its id. */
+  answers: SectionAnswers
+  onChange: (rowId: string, option: string) => void
+}) {
+  const fieldId = `prompt-${prompt.id}`
+
+  return (
+    <div role="group" aria-labelledby={fieldId} className="mb-6 last:mb-0">
+      <p id={fieldId} className="mb-3 leading-[1.4] font-semibold text-pretty">
+        {prompt.question}
+      </p>
+      <div
+        aria-hidden="true"
+        className={`hidden items-end gap-x-2 border-b-2 border-ink pb-2 text-small font-semibold md:grid ${MATRIX_COLUMNS}`}
+      >
+        <span>{prompt.rowHeader}</span>
+        {prompt.options.map((option) => (
+          <span key={option} className="text-center text-balance">
+            {option}
+          </span>
+        ))}
+      </div>
+      {prompt.groups.map((group) => (
+        <div key={group.label} className="mt-5">
+          <h4 className="mb-1 text-label font-semibold tracking-label text-ink-2 uppercase">
+            {group.label}
+          </h4>
+          {group.rows.map((row) => (
+            <fieldset
+              key={row.id}
+              className="min-w-0 border-t border-card-line py-2.5"
+            >
+              <legend className="sr-only">{row.label}</legend>
+              <div className={`items-center gap-x-2 md:grid ${MATRIX_COLUMNS}`}>
+                <p aria-hidden="true" className="mb-1.5 text-pretty md:mb-0">
+                  {row.label}
+                </p>
+                {prompt.options.map((option) => (
+                  <label
+                    key={option}
+                    className="mr-5 inline-flex cursor-pointer items-center gap-2 py-1 md:mr-0 md:flex md:justify-center"
+                  >
+                    <input
+                      type="radio"
+                      name={`${fieldId}-${row.id}`}
+                      value={option}
+                      checked={answers[row.id] === option}
+                      onChange={() => onChange(row.id, option)}
+                      className="size-5.5 shrink-0 cursor-pointer accent-yale-blue"
+                    />
+                    <span className="text-small md:sr-only">{option}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ))}
+        </div>
+      ))}
+      {prompt.hint && (
+        <p className="mt-3 text-caption text-ink-2">{prompt.hint}</p>
+      )}
+    </div>
+  )
+}
+
 /** One option, as radio buttons. */
 function ChoiceField({
   prompt,
@@ -613,6 +813,16 @@ function PickField({
                   />
                   {option}
                 </label>
+                {/* Outside the label, so following it doesn't tick the box */}
+                {prompt.links?.[option] && (
+                  <ExternalLink
+                    url={prompt.links[option]}
+                    className="ml-8 text-small"
+                  >
+                    Website
+                    <span className="sr-only">: {option}</span>
+                  </ExternalLink>
+                )}
               </li>
             )
           })}

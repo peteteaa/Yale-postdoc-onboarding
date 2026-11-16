@@ -1,6 +1,6 @@
 // Orientation workbook content, from the OPA workbook (titles, wording and
-// structure follow the workbook, not the mockup). Sections 1–3 so far; the rest
-// get added one at a time.
+// structure follow the workbook, not the mockup). The workbook's Initial IDP
+// worksheet isn't here: it's for the IDP Builder page.
 
 import type { ResourceTopic } from '#/data/resources'
 
@@ -11,6 +11,8 @@ type PromptBase = {
   question: string
   /** Extra guidance shown under the question. */
   hint?: string
+  /** Where the prompt's content comes from, shown under the field. */
+  source?: string
   /** Only show this prompt once another prompt in the section has this answer. */
   showIf?: { promptId: string; answer: string }
 }
@@ -25,7 +27,12 @@ export type TextPrompt = PromptBase & {
    * Shown in parentheses after the question.
    */
   optional?: string
+  /** A one-line box, for short answers like an amount of time. */
+  short?: boolean
 }
+
+/** A date, saved as YYYY-MM-DD. */
+export type DatePrompt = PromptBase & { kind: 'date' }
 
 /** Pick some options from a list, and optionally write your own. */
 export type PickPrompt = PromptBase & {
@@ -71,7 +78,12 @@ export type MatrixPrompt = PromptBase & {
 }
 
 export type Prompt =
-  TextPrompt | PickPrompt | ChoicePrompt | TablePrompt | MatrixPrompt
+  | TextPrompt
+  | DatePrompt
+  | PickPrompt
+  | ChoicePrompt
+  | TablePrompt
+  | MatrixPrompt
 
 /** A prompt with an answer of its own: every kind but a matrix. */
 export type AnswerPrompt = Exclude<Prompt, MatrixPrompt>
@@ -145,10 +157,15 @@ export type WorkbookPart = {
   /** Shown under the description. */
   lists?: InfoList[]
   prompts?: Prompt[]
+  /** A paragraph after the prompts, e.g. a reminder. */
+  note?: string
 }
 
-/** A bulleted list to read, like tips or reflection questions. */
-export type InfoList = { heading?: string; items: string[] }
+/** A bulleted list to read, like tips or reflection questions, or links. */
+export type InfoList = {
+  heading?: string
+  items: (string | { text: string; url: string })[]
+}
 
 /**
  * All of a section's prompts that have answers, including its parts'. Each
@@ -294,7 +311,7 @@ export const MODULES: WorkbookModule[] = [
             id: 'values',
             question:
               'Choose 3–5 values that drive your engagement in your work, or write your own.',
-            hint: 'List adapted from the Stanford Meaningful Work Toolkit.',
+            source: 'List adapted from the Stanford Meaningful Work Toolkit.',
             min: 3,
             max: 5,
             allowOwn: true,
@@ -401,7 +418,8 @@ export const MODULES: WorkbookModule[] = [
                 id: 'work-culture',
                 question:
                   'Work culture: what helps me thrive? Select 3–5 priorities or add your own.',
-                hint: 'List adapted from the Stanford Meaningful Work Toolkit.',
+                source:
+                  'List adapted from the Stanford Meaningful Work Toolkit.',
                 min: 3,
                 max: 5,
                 allowOwn: true,
@@ -728,7 +746,8 @@ export const MODULES: WorkbookModule[] = [
             // (Yes/No)" and "Right now / Short-term (≤6 months) / Long-term
             // (1–2 years)". Choosing a time here means yes.
             question: 'Mentorship support needed?',
-            hint: 'Adapted from Branchaw, J., Pfund, C., & Rediske, R. (2010). Entering Research: Workshops for Students Beginning Research in Science. W.H. Freeman & Co.',
+            source:
+              'Adapted from Branchaw, J., Pfund, C., & Rediske, R. (2010). Entering Research: Workshops for Students Beginning Research in Science. W.H. Freeman & Co.',
             rowHeader: 'Specific Mentoring Need',
             options: [
               'No',
@@ -1184,6 +1203,336 @@ export const MODULES: WorkbookModule[] = [
                   'If the fit is good, suggest a follow-up meeting',
                   'If not, reflect and identify another mentor',
                   'Come prepared with topics or materials (drafts, grant outlines, job descriptions)',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'community-next-steps',
+    ref: '4',
+    // TODO(Nish): ask OPA which title to use. The section's own heading,
+    // "Connection, Career Direction & Self-Assessment (Exploratory)", repeats
+    // 1.4's title, so this uses the overview page's name for it.
+    title: 'Community & Next Steps',
+    sections: [
+      {
+        id: 'associations',
+        ref: '4.1',
+        title: 'Connection: Yale Postdoc Associations',
+        lists: [
+          {
+            items: [
+              {
+                text: 'Yale Postdoc Association (YPA)',
+                url: 'https://ypa.yale.edu/',
+              },
+              {
+                text: 'YPA Buddy Program',
+                url: 'https://ypa.yale.edu/committees/mentorship-committee/buddy-program',
+              },
+              {
+                text: 'Yale Black Postdoc Association (YBPA)',
+                url: 'https://medicine.yale.edu/ybpa/',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'community',
+        ref: '4.2',
+        title: 'Community & Belonging',
+        description:
+          'Connecting with others, especially outside your unit/lab, can help you grow your personal and professional network and sense of belonging.',
+        when: 'At orientation',
+        prompts: [
+          {
+            kind: 'pick',
+            id: 'community-actions',
+            // The workbook says "circle (or add your own)", and "Your ideas"
+            // for adding your own.
+            question:
+              'Review the resources below and choose (or add your own) which ones you wish to explore',
+            allowOwn: true,
+            layout: 'checklist',
+            options: [
+              'Join YPA to see Yale Postdoc Association Events and attend one!',
+              'Join YBPA to see Yale Black Postdoc Association Events and attend one!',
+              'Join YPA Slack Channel',
+              'Office of International Students and Scholars – sign up for newsletter to learn about events',
+              'Check out events offered by the Social & Affinity Groups at Yale',
+              'Check out Yale Postdoc Association’s Welcome to Yale page',
+              'Check out the Yale Postdoc Association webpage',
+              // The workbook leaves out "the" here.
+              'Check out the Yale Black Postdoc Association webpage',
+              'Follow up with someone you met at orientation for coffee',
+              'Look up events in Yale Connect',
+            ],
+            links: {
+              'Join YPA to see Yale Postdoc Association Events and attend one!':
+                'https://yaleconnect.yale.edu/PDYPA/club_signup',
+              'Join YBPA to see Yale Black Postdoc Association Events and attend one!':
+                'https://yaleconnect.yale.edu/PDYBPDA/club_signup',
+              'Join YPA Slack Channel':
+                'https://ypa-yale.slack.com/join/shared_invite/enQtODM3Mjc0NDg3MTU5LTFjZDA4ZGUwYjEwMzdkNmQzMjFkMTY2NDhjYTVhMTY1MmRiMTIwNWM1MjIyM2JmNTU3ZjRhZDVjYTYxZDYyNzI',
+              'Office of International Students and Scholars – sign up for newsletter to learn about events':
+                'https://oiss.yale.edu/programs-events/newsletter-social-media',
+              'Check out events offered by the Social & Affinity Groups at Yale':
+                'https://ypa.yale.edu/resources/social-and-affinity-groups',
+              'Check out Yale Postdoc Association’s Welcome to Yale page':
+                'https://docs.google.com/document/d/1Yq_jvbiUsewjDPfwoMLNnSQUfBR77hZixivyU9btYi4/edit?tab=t.0',
+              'Check out the Yale Postdoc Association webpage':
+                'https://ypa.yale.edu/',
+              'Check out the Yale Black Postdoc Association webpage':
+                'https://medicine.yale.edu/ybpa/',
+              'Look up events in Yale Connect':
+                'https://yaleconnect.yale.edu/home_login',
+            },
+          },
+        ],
+      },
+      {
+        id: 'first-three-months',
+        ref: '4.3',
+        // The workbook says "Your To Do list".
+        title: 'Initial Steps: Your To-Do List and Prioritizing',
+        when: 'At orientation',
+        prompts: [
+          {
+            kind: 'date',
+            id: 'idp-date',
+            question: 'What is the date approximately 3 months from now?',
+            // The workbook ends with "- see next section", the Initial IDP
+            // worksheet.
+            hint: 'This is when we recommend meeting with your mentor with your Initial Development Plan (IDP).',
+          },
+        ],
+        // The workbook points back to sections by number, e.g. "from section
+        // 2.4 Wellness". These use the sections' titles instead.
+        // TODO: show what they wrote in those sections, instead of asking them
+        // to write it again.
+        parts: [
+          {
+            ref: '4.3 Month 1',
+            title: 'Month 1 (Next 4 Weeks): Explore the Resources',
+            description: 'Suggestion: Block off 1 hour each week.',
+            prompts: [
+              {
+                kind: 'text',
+                id: 'wellness-plan',
+                label: 'Wellness',
+                // The workbook says "Insert below…" in each area.
+                question:
+                  'Add what you wanted to explore in Wellness Resources and what goals and accountability you articulated',
+              },
+              {
+                kind: 'text',
+                id: 'wellness-time',
+                question:
+                  'How much time do you want to spend to explore and to plan how you will implement your wellness goals and accountability?',
+                hint: 'Suggestion: 1 hour',
+                short: true,
+              },
+              {
+                kind: 'text',
+                id: 'wellness-when',
+                question: 'When in your first 4 weeks will you do this?',
+                hint: 'Suggestion: Week 1 (next week) after orientation',
+                short: true,
+              },
+              {
+                kind: 'text',
+                id: 'community-plan',
+                label: 'Community & Belonging',
+                // The workbook says "you circled".
+                question:
+                  'Add the areas to explore/actions to take you chose in Community & Belonging',
+              },
+              {
+                kind: 'text',
+                id: 'community-time',
+                question:
+                  'How much time do you want to spend to explore these/take these actions?',
+                hint: 'Suggestion: 1 hour',
+                short: true,
+              },
+              {
+                kind: 'text',
+                id: 'community-when',
+                question: 'When in your first 4 weeks will you do this?',
+                hint: 'Suggestion: Week 2 after orientation',
+                short: true,
+              },
+              {
+                kind: 'text',
+                id: 'skills-plan',
+                label: 'Skills Development',
+                question:
+                  'Add the areas to explore/actions to take you chose in Initial Actions and Resources for Your Skills Development Areas',
+              },
+              {
+                kind: 'text',
+                id: 'skills-time',
+                question:
+                  'How much time do you want to spend to explore these/take these actions?',
+                hint: 'Suggestion: minimum 1 hour',
+                short: true,
+              },
+              {
+                kind: 'text',
+                id: 'skills-when',
+                question: 'When in your first 4 weeks will you do this?',
+                hint: 'Suggestion: Week 3 after orientation',
+                short: true,
+              },
+              {
+                kind: 'text',
+                id: 'career-plan',
+                label: 'Career Discernment',
+                question:
+                  'Add the areas to explore/actions from Career Discernment & Preparation based on your current stage',
+              },
+              {
+                kind: 'text',
+                id: 'career-time',
+                question:
+                  'How much time do you want to spend to explore these/take these actions?',
+                // The workbook has "(suggestion: minimum 1 hour)" here.
+                hint: 'Suggestion: minimum 1 hour',
+                short: true,
+              },
+              {
+                kind: 'text',
+                id: 'career-when',
+                question: 'When in your first 4 weeks will you do this?',
+                hint: 'Suggestion: Week 4 after orientation',
+                short: true,
+              },
+            ],
+            // TODO(Nish): ask OPA what "3.4" means here. The workbook says
+            // "(sections 3.2 and 3.4)", and has no 3.4.
+            note: 'Don’t forget to align expectations with your mentor (see Aligning Expectations with Your Mentor). You don’t have to address all areas in a single meeting or conversation, but be sure to take notes (Aligning Expectations with Your Mentor is a good place for this!).',
+          },
+          {
+            ref: '4.3 Month 2',
+            title: 'Month 2: Choose What to Prioritize and Start Engaging',
+            // Each area is a to-do list to tick off. The workbook puts the
+            // suggested time and week in their own columns.
+            prompts: [
+              {
+                kind: 'pick',
+                id: 'month-2-role',
+                question: 'Articulating Your Role & Your Goals',
+                hint: 'Suggestion: Block off 30–60 minutes to do this. Complete this in Week 5.',
+                allowOwn: false,
+                layout: 'checklist',
+                options: [
+                  'Fill out “Add more detail” under Project Title(s) or Research Area(s) with full details about your role’s responsibilities & projects',
+                  'Fill out “Add more detail” under Identify Your Postdoc Goals with more details about your goal(s)',
+                ],
+              },
+              {
+                kind: 'pick',
+                id: 'month-2-wellness',
+                question: 'Wellness, Boundary Setting & Time Management',
+                hint: 'Suggestion: Block off 30–60 minutes to do this. Complete this in Week 6.',
+                allowOwn: false,
+                layout: 'checklist',
+                options: [
+                  'Fill out Boundary Setting & Time Management and check out the time management resources',
+                  'Check in on your wellness goals and accountability: make adjustments and/or explore further resources as needed',
+                ],
+              },
+              {
+                kind: 'pick',
+                id: 'month-2-community',
+                question: 'Community & Belonging',
+                hint: 'Suggestion: Block off 30 minutes to do this. Complete this in Week 7.',
+                allowOwn: false,
+                layout: 'checklist',
+                options: [
+                  'Reflect on events or groups you’ve engaged with thus far in terms of socializing and community',
+                  'Decide and sign up for an event either with the same group or try out a new one',
+                ],
+              },
+              {
+                kind: 'pick',
+                id: 'month-2-skills-career',
+                question: 'Skills Development & Career Discernment',
+                hint: 'Reflect on your skills development and career discernment activities thus far. Suggestion: Block off 60–90 minutes to do this. Complete this in Week 8.',
+                allowOwn: false,
+                layout: 'checklist',
+                options: [
+                  'Look back at the skills areas and resources/initial actions in Mentorship & Your Skills Development, along with the next career steps you are considering. Make any changes to what skills you wish to prioritize for development.',
+                  // The workbook has "identify: what kinds of resources do you
+                  // need…" and ends the examples with "etc.".
+                  'Reflect on the events and resources with which you’ve already engaged – are these helping you develop the skills you wish? If not, identify what kinds of resources you need to work on those skills (e.g., a mentor in this area to offer feedback, a workshop/training, opportunity to practice).',
+                  // The workbook says "Office for Postdoc Affairs".
+                  'Find and engage with the resources and events you need to develop those skills (use the workbook, the Office of Postdoctoral Affairs website, and/or ask your mentoring team for guidance).',
+                ],
+              },
+            ],
+          },
+          {
+            ref: '4.3 Month 3',
+            title:
+              'Month 3: Prepare for Your Initial Development Plan (IDP) Meeting',
+            // TODO: link to the Initial IDP once the IDP Builder page exists.
+            prompts: [
+              {
+                kind: 'pick',
+                id: 'month-3-role',
+                question: 'Your Role, Goals and Reflection',
+                hint: 'Suggestion: Block off 30–60 minutes to do this. Complete this in Week 9.',
+                allowOwn: false,
+                layout: 'checklist',
+                // The workbook says "Fill our".
+                options: [
+                  'Schedule the Initial IDP meeting with your faculty mentor',
+                  'Fill out sections 1, 2 and 3 of your Initial IDP',
+                ],
+              },
+              {
+                kind: 'pick',
+                id: 'month-3-skills',
+                question:
+                  'Skills & Professional Development, Career Preparation',
+                hint: 'Suggestion: Block off 60–90 minutes to do this. Complete this in Week 10.',
+                allowOwn: false,
+                layout: 'checklist',
+                options: [
+                  'Fill out sections 4, 5, 6, 7 and 8 of your Initial IDP',
+                ],
+              },
+              {
+                kind: 'pick',
+                id: 'month-3-mentorship',
+                question: 'Mentorship and Building Your Mentoring Team',
+                hint: 'Suggestion: Block off 30–60 minutes to do this. Complete this in Week 11.',
+                allowOwn: false,
+                layout: 'checklist',
+                options: [
+                  'Now knowing more about your faculty mentor and your own needs, fill out Identifying Your Specific Mentoring Needs (or note down your own additional/different needs)',
+                  'Continue filling in Developing Your Mentoring Team with any additional mentors',
+                  'Prepare to ask your faculty mentor for suggestions for further mentors based on your needs and career interests',
+                ],
+              },
+              {
+                kind: 'pick',
+                id: 'month-3-meeting',
+                question: 'Preparing for Your Meeting',
+                hint: 'Suggestion: Block off 60–90 minutes to do this. Complete this in Week 12.',
+                allowOwn: false,
+                layout: 'checklist',
+                // The workbook says "Share Initial IDP".
+                options: [
+                  'Make any final inputs or changes to your Initial IDP',
+                  'Share your Initial IDP with your mentor prior to the meeting',
+                  'Review your workbook and your IDP to prepare for your meeting',
                 ],
               },
             ],

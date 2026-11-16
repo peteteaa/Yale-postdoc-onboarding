@@ -26,6 +26,14 @@ function cleanAnswer(prompt: AnswerPrompt, value: unknown): Answer | null {
       return typeof value === 'string' && value.length <= MAX_TEXT_LENGTH
         ? value
         : null
+    case 'date':
+      // YYYY-MM-DD, or '' to clear it.
+      return typeof value === 'string' &&
+        (value === '' ||
+          (/^\d{4}-\d{2}-\d{2}$/.test(value) &&
+            !Number.isNaN(Date.parse(value))))
+        ? value
+        : null
     case 'choice':
       // '' clears it.
       return typeof value === 'string' &&

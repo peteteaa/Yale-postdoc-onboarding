@@ -5,6 +5,7 @@ import type { Resource } from '#/data/resources'
 import type {
   Answer,
   ChoicePrompt,
+  DatePrompt,
   InfoList,
   MatrixPrompt,
   PickPrompt,
@@ -22,6 +23,7 @@ import {
   MAX_PICKS,
   MAX_TEXT_LENGTH,
   MODULES,
+  sectionPrompts,
 } from '#/data/workbook'
 import type { FormEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -211,6 +213,7 @@ function SectionCard({
               onAnswer={onAnswer}
             />
           )}
+          {part.note && <p className="mt-6 text-pretty">{part.note}</p>}
         </div>
       ))}
       {section.note && (
@@ -228,7 +231,9 @@ function SectionCard({
           {section.footnote}
         </p>
       )}
-      <SaveMessage status={status} onRetry={saveNow} />
+      {sectionPrompts(section).length > 0 && (
+        <SaveMessage status={status} onRetry={saveNow} />
+      )}
       {/* TODO: Previous/Next section buttons */}
     </section>
   )
@@ -240,9 +245,15 @@ function InfoLists({ lists }: { lists: InfoList[] }) {
     <div key={list.heading ?? index} className="mb-5">
       {list.heading && <h5 className="mb-1 font-semibold">{list.heading}</h5>}
       <ul className="grid list-disc gap-1 pl-5 text-pretty marker:text-ink-2">
-        {list.items.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
+        {list.items.map((item) =>
+          typeof item === 'string' ? (
+            <li key={item}>{item}</li>
+          ) : (
+            <li key={item.text}>
+              <ExternalLink url={item.url}>{item.text}</ExternalLink>
+            </li>
+          ),
+        )}
       </ul>
     </div>
   ))
@@ -338,6 +349,15 @@ function PromptList({
         case 'text':
           return (
             <TextField
+              key={prompt.id}
+              prompt={prompt}
+              value={typeof answer === 'string' ? answer : ''}
+              onChange={(value) => onAnswer(prompt.id, value)}
+            />
+          )
+        case 'date':
+          return (
+            <DateField
               key={prompt.id}
               prompt={prompt}
               value={typeof answer === 'string' ? answer : ''}
@@ -537,21 +557,85 @@ function TextField({
         )}
       </label>
       {prompt.hint && (
-        <p id={hintId} className="mb-2 text-small text-ink-2">
+        <p id={hintId} className="mb-2 text-small text-pretty text-ink-2">
           {prompt.hint}
         </p>
       )}
-      <textarea
+      {prompt.short ? (
+        <input
+          id={inputId}
+          type="text"
+          maxLength={MAX_TEXT_LENGTH}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-describedby={prompt.hint ? hintId : undefined}
+          className={`${INPUT} max-w-130`}
+        />
+      ) : (
+        <textarea
+          id={inputId}
+          rows={3}
+          maxLength={MAX_TEXT_LENGTH}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          aria-describedby={prompt.hint ? hintId : undefined}
+          className={`${INPUT} block min-h-21 resize-y`}
+        />
+      )}
+      {prompt.source && <Source text={prompt.source} />}
+    </div>
+  )
+}
+
+function DateField({
+  prompt,
+  value,
+  onChange,
+}: {
+  prompt: DatePrompt
+  /** YYYY-MM-DD, or '' for none. */
+  value: string
+  onChange: (value: string) => void
+}) {
+  const inputId = `prompt-${prompt.id}`
+  const hintId = `${inputId}-hint`
+
+  return (
+    <div className="mb-6 last:mb-0">
+      <label
+        htmlFor={inputId}
+        className="mb-1.5 block leading-[1.4] font-semibold text-pretty"
+      >
+        {prompt.question}
+      </label>
+      {prompt.hint && (
+        <p id={hintId} className="mb-2 text-small text-pretty text-ink-2">
+          {prompt.hint}
+        </p>
+      )}
+      <input
         id={inputId}
-        rows={3}
-        maxLength={MAX_TEXT_LENGTH}
+        type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-describedby={prompt.hint ? hintId : undefined}
-        className={`${INPUT} block min-h-21 resize-y`}
+        className={`${INPUT} w-auto`}
       />
+      {prompt.source && <Source text={prompt.source} />}
     </div>
   )
+}
+
+/** Guidance under a question that's a legend or a heading. */
+function Hint({ text }: { text?: string }) {
+  return text ? (
+    <p className="mb-2 text-small text-pretty text-ink-2">{text}</p>
+  ) : null
+}
+
+/** Where a prompt's content comes from, under the field. */
+function Source({ text }: { text: string }) {
+  return <p className="mt-3 text-caption text-pretty text-ink-2">{text}</p>
 }
 
 // Table and matrix columns, from md up. Sized for the workbook's tables: two
@@ -578,6 +662,7 @@ function TableField({
   return (
     <fieldset className="mb-6 min-w-0 last:mb-0">
       <legend className="sr-only">{prompt.question}</legend>
+      <Hint text={prompt.hint} />
       <div
         aria-hidden="true"
         className={`mb-1.5 hidden gap-3 font-semibold md:grid ${TABLE_COLUMNS}`}
@@ -618,9 +703,7 @@ function TableField({
           </div>
         ))}
       </div>
-      {prompt.hint && (
-        <p className="mt-3 text-caption text-ink-2">{prompt.hint}</p>
-      )}
+      {prompt.source && <Source text={prompt.source} />}
     </fieldset>
   )
 }
@@ -646,6 +729,7 @@ function MatrixField({
       <p id={fieldId} className="mb-3 leading-[1.4] font-semibold text-pretty">
         {prompt.question}
       </p>
+      <Hint text={prompt.hint} />
       <div
         aria-hidden="true"
         className={`hidden items-end gap-x-2 border-b-2 border-ink pb-2 text-small font-semibold md:grid ${MATRIX_COLUMNS}`}
@@ -693,9 +777,7 @@ function MatrixField({
           ))}
         </div>
       ))}
-      {prompt.hint && (
-        <p className="mt-3 text-caption text-ink-2">{prompt.hint}</p>
-      )}
+      {prompt.source && <Source text={prompt.source} />}
     </div>
   )
 }
@@ -715,6 +797,7 @@ function ChoiceField({
       <legend className="mb-2 leading-[1.4] font-semibold text-pretty">
         {prompt.question}
       </legend>
+      <Hint text={prompt.hint} />
       <div className="grid gap-2">
         {prompt.options.map((option) => (
           <label
@@ -733,9 +816,7 @@ function ChoiceField({
           </label>
         ))}
       </div>
-      {prompt.hint && (
-        <p className="mt-3 text-caption text-ink-2">{prompt.hint}</p>
-      )}
+      {prompt.source && <Source text={prompt.source} />}
     </fieldset>
   )
 }
@@ -792,6 +873,7 @@ function PickField({
       <legend className="mb-2 leading-[1.4] font-semibold text-pretty">
         {prompt.question}
       </legend>
+      <Hint text={prompt.hint} />
       {prompt.max !== undefined && (
         <p aria-live="polite" className="-mt-0.5 mb-2 text-small text-ink-2">
           {value.length} chosen · up to {prompt.max}
@@ -877,9 +959,7 @@ function PickField({
           </button>
         </form>
       )}
-      {prompt.hint && (
-        <p className="mt-3 text-caption text-ink-2">{prompt.hint}</p>
-      )}
+      {prompt.source && <Source text={prompt.source} />}
     </fieldset>
   )
 }

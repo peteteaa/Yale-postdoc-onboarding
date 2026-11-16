@@ -1,6 +1,8 @@
 // Orientation workbook content, from the OPA workbook (titles, wording and
-// structure follow the workbook, not the mockup). Section 1 so far; the rest
-// get added one at a time.
+// structure follow the workbook, not the mockup). Sections 1 and 2 so far; the
+// rest get added one at a time.
+
+import type { ResourceTopic } from '#/data/resources'
 
 /** What every kind of prompt has. */
 type PromptBase = {
@@ -76,6 +78,20 @@ export type WorkbookSection = {
   prompts?: Prompt[]
   /** Numbered sub-parts with their own headings, e.g. 1.3.1. */
   parts?: WorkbookPart[]
+  /** A sentence with a link, shown after the prompts, e.g. a policy reminder. */
+  note?: { text: string; link: { label: string; url: string } }
+  /**
+   * Links from one topic of the Resources page, so OPA staff can keep them up
+   * to date in one place.
+   */
+  resources?: {
+    topic: ResourceTopic
+    title: string
+    /** Before the prompts (the default) or after them, as in the workbook. */
+    placement?: 'before' | 'after'
+    /** A last line under the links. */
+    footnote?: string
+  }
 }
 
 /** A sub-part of a section, e.g. 1.3.1, shown under its own heading. */
@@ -151,8 +167,8 @@ const CAREER_STAGES = [
   },
 ]
 
-// The workbook highlights in gray what's done after orientation. In Section 1
-// that's the "Add more detail" prompts in 1.3 and all of 1.4.2.
+// The workbook highlights in gray what's done after orientation: the "Add more
+// detail" prompts in 1.3, and all of 1.4.2 and 2.3.
 export const MODULES: WorkbookModule[] = [
   {
     id: 'reflection-role-alignment',
@@ -410,6 +426,102 @@ export const MODULES: WorkbookModule[] = [
                 options: stage.actions,
               })),
             ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'benefits-policies',
+    ref: '2',
+    // The workbook's overview page calls it "Benefits and Policies".
+    title: 'Postdoc Benefits & Policies',
+    // 2.1 and 2.2, the onboarding checklists, are on the Checklist page.
+    sections: [
+      {
+        id: 'boundaries-time',
+        ref: '2.3',
+        title: 'Boundary Setting & Time Management',
+        when: 'Within 4 weeks of orientation',
+        prompts: [
+          {
+            kind: 'text',
+            id: 'time-askers',
+            question: 'Who will regularly ask for your time?',
+          },
+          {
+            kind: 'text',
+            id: 'communication-plan',
+            question: 'How will you communicate with these groups?',
+          },
+          {
+            kind: 'text',
+            id: 'online-hours',
+            question: 'How often will you be online / monitoring emails?',
+          },
+          {
+            kind: 'text',
+            id: 'development-time',
+            question: 'How will you protect time for professional development?',
+          },
+          {
+            kind: 'text',
+            id: 'boundary-phrasing',
+            question: 'Sample phrasing to discuss boundaries with your mentor',
+          },
+        ],
+        note: {
+          // The workbook says "Refer to Yale Postdoctoral…", without "the".
+          text: 'Reminder: Refer to the',
+          link: {
+            label: 'Yale Postdoctoral Associate/Fellow PTO policy',
+            url: 'https://postdocs.yale.edu/postdocs/being-a-postdoc-at-yale/benefits-summary',
+          },
+        },
+        // The workbook also lists "EOW sweep" as an approach, without a link.
+        resources: {
+          topic: 'time',
+          title: 'Time Management Resources',
+          placement: 'after',
+        },
+      },
+      {
+        id: 'wellness',
+        ref: '2.4',
+        title: 'Wellness Resources',
+        description:
+          'Planning your first year in your role holistically to include your emotional and physical wellbeing as priorities is imperative.',
+        when: 'At orientation',
+        resources: {
+          topic: 'wellness',
+          title: 'Wellness Resources at Yale',
+          // The workbook says "Taichi".
+          footnote:
+            'Search for your particular wellness or physical activity (e.g., tai chi, Runner’s Club) using Google, Yale Connect, and/or the YPA Slack.',
+        },
+        // Examples tidied from the workbook: consistent capitals and
+        // semicolons, and hyphens in "drop-in" and "30-minute check-in".
+        prompts: [
+          {
+            kind: 'text',
+            id: 'emotional',
+            question:
+              'What do you want to do and/or explore to promote your emotional wellbeing?',
+            hint: 'Examples: Use Calm app daily; find a therapist; attend drop-in meditation',
+          },
+          {
+            kind: 'text',
+            id: 'physical',
+            question:
+              'What do you want to do and/or explore to promote your physical wellbeing?',
+            hint: 'Examples: Try out New Haven Road Runners club; walk outside for at least 10 minutes each day; sign up for Yale or New Haven gym or sporting club (ask for ideas on the YPA Slack channel!)',
+          },
+          {
+            kind: 'text',
+            id: 'accountability',
+            question:
+              'What will you do to ensure accountability for your above emotional and physical wellbeing?',
+            hint: 'Examples: Schedule a 30-minute check-in moment in your calendar once per month to reflect on your wellness and balance; find a colleague/family member/friend to share your commitments with and act as accountability partner',
           },
         ],
       },

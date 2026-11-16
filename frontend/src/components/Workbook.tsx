@@ -1,6 +1,7 @@
 'use client'
 
 import { saveAnswers } from '#/app/workbook/actions'
+import type { Resource } from '#/data/resources'
 import type {
   Answer,
   ChoicePrompt,
@@ -18,7 +19,7 @@ import {
   MAX_TEXT_LENGTH,
   MODULES,
 } from '#/data/workbook'
-import type { FormEvent } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** A new answer, or a function that builds it from the latest one. */
@@ -38,10 +39,13 @@ const GHOST_BUTTON =
 export function Workbook({
   savedAnswers,
   loadError,
+  resources,
 }: {
   savedAnswers: WorkbookAnswers
   /** Set when the saved answers couldn't be loaded. */
   loadError: boolean
+  /** The Resources page's links, or null if they couldn't be loaded. */
+  resources: Resource[] | null
 }) {
   return (
     <main className="mx-auto max-w-page px-4 pt-6 pb-12 md:px-10 md:pt-10 md:pb-18">
@@ -66,6 +70,7 @@ export function Workbook({
               key={module.id}
               module={module}
               savedAnswers={savedAnswers}
+              resources={resources}
             />
           ))}
         </div>
@@ -77,9 +82,11 @@ export function Workbook({
 function ModuleBlock({
   module,
   savedAnswers,
+  resources,
 }: {
   module: WorkbookModule
   savedAnswers: WorkbookAnswers
+  resources: Resource[] | null
 }) {
   const headingId = `module-${module.id}`
 
@@ -102,6 +109,7 @@ function ModuleBlock({
             key={section.id}
             section={section}
             savedAnswers={savedAnswers[section.id] ?? {}}
+            resources={resources}
           />
         ))}
       </div>
@@ -112,9 +120,11 @@ function ModuleBlock({
 function SectionCard({
   section,
   savedAnswers,
+  resources,
 }: {
   section: WorkbookSection
   savedAnswers: SectionAnswers
+  resources: Resource[] | null
 }) {
   const headingId = `section-${section.id}`
   const [answers, setAnswers] = useState(savedAnswers)
@@ -130,6 +140,17 @@ function SectionCard({
     setAnswers(latest.current)
     queueSave(promptId, answer)
   }
+
+  const resourceBox = section.resources && (
+    <ResourceBox
+      title={section.resources.title}
+      items={
+        resources?.filter((r) => r.topic === section.resources?.topic) ?? null
+      }
+      footnote={section.resources.footnote}
+    />
+  )
+  const resourcesAfter = section.resources?.placement === 'after'
 
   return (
     <section
@@ -147,6 +168,7 @@ function SectionCard({
       {section.description && (
         <p className="mb-5 text-pretty text-ink-2">{section.description}</p>
       )}
+      {!resourcesAfter && resourceBox}
       {section.prompts && (
         <PromptList
           prompts={section.prompts}
@@ -183,9 +205,87 @@ function SectionCard({
           />
         </div>
       ))}
+      {section.note && (
+        <p className="my-6 text-pretty">
+          {section.note.text}{' '}
+          <ExternalLink url={section.note.link.url}>
+            {section.note.link.label}
+          </ExternalLink>
+          .
+        </p>
+      )}
+      {resourcesAfter && resourceBox}
       <SaveMessage status={status} onRetry={saveNow} />
       {/* TODO: Previous/Next section buttons */}
     </section>
+  )
+}
+
+/** Links from one topic of the Resources page. */
+function ResourceBox({
+  title,
+  items,
+  footnote,
+}: {
+  title: string
+  /** null if the resources couldn't be loaded. */
+  items: Resource[] | null
+  footnote?: string
+}) {
+  return (
+    <div className="my-6 rounded bg-wash px-4 py-4 md:px-5">
+      <h4 className="mb-3 text-task-title font-bold text-balance">{title}</h4>
+      {items === null ? (
+        <p className="text-small text-ink-2">
+          These resources couldn’t be loaded right now.
+        </p>
+      ) : (
+        <ul className="grid gap-x-8 gap-y-3 md:grid-cols-2">
+          {items.map((resource) => (
+            <li key={resource.id}>
+              <ExternalLink
+                url={resource.url}
+                className="font-semibold text-pretty"
+              >
+                {resource.name}
+              </ExternalLink>
+              {resource.description && (
+                <p className="mt-0.5 text-small text-pretty text-ink-2">
+                  {resource.description}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {footnote && (
+        <p className="mt-4 text-small text-pretty text-ink-2">{footnote}</p>
+      )}
+    </div>
+  )
+}
+
+/** A link that opens in a new tab, so the workbook stays open. */
+function ExternalLink({
+  url,
+  className,
+  children,
+}: {
+  url: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+    >
+      {children}
+      <span aria-hidden="true"> ↗</span>
+      <span className="sr-only"> (opens in a new tab)</span>
+    </a>
   )
 }
 

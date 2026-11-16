@@ -29,6 +29,18 @@ export type PickPrompt = {
 
 export type Prompt = TextPrompt | PickPrompt
 
+/** Longest answer to a text prompt. */
+export const MAX_TEXT_LENGTH = 10_000
+/** Longest option someone can write for a pick prompt. */
+export const MAX_OWN_OPTION_LENGTH = 100
+
+/** Free text, or the options picked for a pick prompt. */
+export type Answer = string | string[]
+/** One section's answers, by prompt id. */
+export type SectionAnswers = Record<string, Answer | undefined>
+/** Someone's answers, by section id. */
+export type WorkbookAnswers = Record<string, SectionAnswers | undefined>
+
 /** A numbered part of a workbook section, e.g. 1.1. */
 export type WorkbookSection = {
   id: string

@@ -1,21 +1,30 @@
 'use client'
 
+import { saveAnswers } from '#/app/workbook/actions'
 import type {
+  Answer,
   PickPrompt,
+  SectionAnswers,
   TextPrompt,
+  WorkbookAnswers,
   WorkbookModule,
   WorkbookSection,
 } from '#/data/workbook'
-import { MODULES } from '#/data/workbook'
+import {
+  MAX_OWN_OPTION_LENGTH,
+  MAX_TEXT_LENGTH,
+  MODULES,
+} from '#/data/workbook'
 import type { FormEvent } from 'react'
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-/** Free text, or the options picked for a pick prompt. */
-type Answer = string | string[]
-type Answers = Record<string, Answer | undefined>
 /** A new answer, or a function that builds it from the latest one. */
 type AnswerUpdate = Answer | ((prev: Answer | undefined) => Answer)
-type OnAnswer = (promptId: string, update: AnswerUpdate) => void
+
+/** How long to wait after the last change before saving. */
+const SAVE_DELAY_MS = 1000
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 // Same look as the admin forms' fields and ghost button.
 const INPUT =
@@ -23,17 +32,14 @@ const INPUT =
 const GHOST_BUTTON =
   'inline-flex min-h-11 cursor-pointer items-center justify-center rounded border-[1.5px] border-yale-blue bg-paper px-4.5 py-2.5 leading-tight font-semibold text-yale-blue hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-paper'
 
-export function Workbook() {
-  // Answers by prompt id.
-  // TODO: save to the backend instead of keeping them in memory
-  const [answers, setAnswers] = useState<Answers>({})
-  const setAnswer: OnAnswer = (promptId, update) =>
-    setAnswers((prev) => ({
-      ...prev,
-      [promptId]:
-        typeof update === 'function' ? update(prev[promptId]) : update,
-    }))
-
+export function Workbook({
+  savedAnswers,
+  loadError,
+}: {
+  savedAnswers: WorkbookAnswers
+  /** Set when the saved answers couldn't be loaded. */
+  loadError: boolean
+}) {
   return (
     <main className="mx-auto max-w-page px-4 pt-6 pb-12 md:px-10 md:pt-10 md:pb-18">
       <div className="mb-7 max-w-195">
@@ -44,29 +50,33 @@ export function Workbook() {
       </div>
       <PrivacyNote />
 
-      {/* TODO: a way to move between workbook sections, once there are more of them */}
-      <div className="grid gap-12">
-        {MODULES.map((module) => (
-          <ModuleBlock
-            key={module.id}
-            module={module}
-            answers={answers}
-            onAnswer={setAnswer}
-          />
-        ))}
-      </div>
+      {/* Without the saved answers, saving would overwrite them, so don't show the form. */}
+      {loadError ? (
+        <p role="alert" className="rounded bg-wash px-4 py-3">
+          Your answers couldn’t be loaded right now. Try again in a few minutes.
+        </p>
+      ) : (
+        // TODO: a way to move between workbook sections, once there are more of them
+        <div className="grid gap-12">
+          {MODULES.map((module) => (
+            <ModuleBlock
+              key={module.id}
+              module={module}
+              savedAnswers={savedAnswers}
+            />
+          ))}
+        </div>
+      )}
     </main>
   )
 }
 
 function ModuleBlock({
   module,
-  answers,
-  onAnswer,
+  savedAnswers,
 }: {
   module: WorkbookModule
-  answers: Answers
-  onAnswer: OnAnswer
+  savedAnswers: WorkbookAnswers
 }) {
   const headingId = `module-${module.id}`
 
@@ -88,8 +98,7 @@ function ModuleBlock({
           <SectionCard
             key={section.id}
             section={section}
-            answers={answers}
-            onAnswer={onAnswer}
+            savedAnswers={savedAnswers[section.id] ?? {}}
           />
         ))}
       </div>
@@ -99,14 +108,25 @@ function ModuleBlock({
 
 function SectionCard({
   section,
-  answers,
-  onAnswer,
+  savedAnswers,
 }: {
   section: WorkbookSection
-  answers: Answers
-  onAnswer: OnAnswer
+  savedAnswers: SectionAnswers
 }) {
   const headingId = `section-${section.id}`
+  const [answers, setAnswers] = useState(savedAnswers)
+  // The latest answers, for building the next one in event handlers. Quick
+  // clicks can come before a re-render, when `answers` is still the old one.
+  const latest = useRef(savedAnswers)
+  const { status, queueSave, saveNow } = useAutosave(section.id)
+
+  const onAnswer = (promptId: string, update: AnswerUpdate) => {
+    const answer =
+      typeof update === 'function' ? update(latest.current[promptId]) : update
+    latest.current = { ...latest.current, [promptId]: answer }
+    setAnswers(latest.current)
+    queueSave(promptId, answer)
+  }
 
   return (
     <section
@@ -146,8 +166,98 @@ function SectionCard({
           />
         )
       })}
-      {/* TODO: "Saved" status and Previous/Next section buttons, once answers are saved */}
+      <SaveMessage status={status} onRetry={saveNow} />
+      {/* TODO: Previous/Next section buttons */}
     </section>
+  )
+}
+
+/**
+ * Saves a section's answers a moment after the last change. Answers that
+ * don't save are kept and sent again with the next save.
+ */
+function useAutosave(sectionId: string) {
+  const [status, setStatus] = useState<SaveStatus>('idle')
+  // Answers that haven't been saved yet, by prompt id.
+  const unsaved = useRef(new Map<string, Answer>())
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const saveNow = useCallback(async () => {
+    clearTimeout(timer.current)
+    if (unsaved.current.size === 0) return
+    const sending = new Map(unsaved.current)
+    setStatus('saving')
+
+    let ok = false
+    try {
+      ok = (await saveAnswers(sectionId, Object.fromEntries(sending))).ok
+    } catch (error) {
+      // e.g. offline
+      console.error('Saving workbook answers failed:', error)
+    }
+    if (!ok) {
+      setStatus('error')
+      return
+    }
+    // Forget what was saved, unless it changed again while saving.
+    for (const [promptId, answer] of sending) {
+      if (unsaved.current.get(promptId) === answer) {
+        unsaved.current.delete(promptId)
+      }
+    }
+    if (unsaved.current.size === 0) setStatus('saved')
+  }, [sectionId])
+
+  const queueSave = useCallback(
+    (promptId: string, answer: Answer) => {
+      unsaved.current.set(promptId, answer)
+      setStatus('saving')
+      clearTimeout(timer.current)
+      timer.current = setTimeout(() => void saveNow(), SAVE_DELAY_MS)
+    },
+    [saveNow],
+  )
+
+  // Save right away when leaving the page for another one in the app.
+  useEffect(() => () => void saveNow(), [saveNow])
+
+  // Ask before closing the tab or reloading while answers aren't saved.
+  useEffect(() => {
+    if (status !== 'saving' && status !== 'error') return
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [status])
+
+  return { status, queueSave, saveNow }
+}
+
+function SaveMessage({
+  status,
+  onRetry,
+}: {
+  status: SaveStatus
+  onRetry: () => void
+}) {
+  if (status === 'error') {
+    return (
+      <div
+        role="alert"
+        className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2"
+      >
+        <p className="font-semibold text-late">Your changes didn’t save.</p>
+        <button type="button" onClick={onRetry} className={GHOST_BUTTON}>
+          Try again
+        </button>
+      </div>
+    )
+  }
+  // Takes up its line even when empty, so cards below don't jump when it appears.
+  return (
+    <p className="mt-5 min-h-[1lh] text-small text-ink-2">
+      {status === 'saving' && 'Saving…'}
+      {status === 'saved' && 'Saved'}
+    </p>
   )
 }
 
@@ -206,6 +316,7 @@ function TextField({
       <textarea
         id={inputId}
         rows={3}
+        maxLength={MAX_TEXT_LENGTH}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-describedby={prompt.hint ? hintId : undefined}
@@ -297,6 +408,7 @@ function PickField({
             <input
               id={ownId}
               type="text"
+              maxLength={MAX_OWN_OPTION_LENGTH}
               value={own}
               onChange={(e) => setOwn(e.target.value)}
               disabled={full}

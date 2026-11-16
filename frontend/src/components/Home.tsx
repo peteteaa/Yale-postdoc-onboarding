@@ -165,10 +165,9 @@ export function Home({
                   : `Was due ${formatDate(idpMeeting)}`
               }
             />
-            {/* TODO: link to the IDP builder once it's built */}
-            <a href="#" className={MORE_LINK}>
+            <Link href="/idp" className={MORE_LINK}>
               Open IDP builder
-            </a>
+            </Link>
           </section>
         </div>
 

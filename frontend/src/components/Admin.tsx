@@ -1,6 +1,9 @@
 'use client'
 
+import { deleteEvent, saveEvent } from '#/app/admin/events/actions'
+import type { EventActionResult } from '#/app/admin/events/actions'
 import {
+  BUSY,
   Field,
   GHOST_BUTTON,
   INPUT,
@@ -12,8 +15,8 @@ import type { Status } from '#/components/StatusIcon'
 import { StatusIcon } from '#/components/StatusIcon'
 import type { PhaseId } from '#/data/checklist'
 import { TASKS } from '#/data/checklist'
-import type { EventCategory, EventStatus, PostdocEvent } from '#/data/events'
-import { EVENT_CATEGORIES, SAMPLE_EVENTS } from '#/data/events'
+import type { EventStatus, PostdocEvent } from '#/data/events'
+import { EVENT_CATEGORIES } from '#/data/events'
 import type { PostdocProgress } from '#/data/postdocs'
 import { POSTDOCS, WORKBOOK_MODULES } from '#/data/postdocs'
 import { appliesTo, taskStatus } from '#/lib/checklist'
@@ -24,10 +27,12 @@ import {
   formatTimeRange,
   parseDate,
 } from '#/lib/dates'
+import type { EventForm, EventFormErrors, EventFormField } from '#/lib/events'
+import { BLANK_EVENT_FORM, validateEvent } from '#/lib/events'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { createContext, use, useRef, useState } from 'react'
-import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
+import { useRef, useState, useTransition } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 
 // TODO: use the real date. Fixed so the page matches the mockup's sample data.
 const TODAY = parseDate('2026-10-11')
@@ -38,19 +43,12 @@ const VIEWS: { href: string; label: string }[] = [
   { href: '/admin/resources', label: 'Resources' },
 ]
 
-type EventsState = [PostdocEvent[], Dispatch<SetStateAction<PostdocEvent[]>>]
-
-const EventsContext = createContext<EventsState | null>(null)
-
 /** The staff tabs around each admin page. Used by the admin layout. */
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  // Kept in the layout so edits survive switching pages.
-  // TODO: load from and save to the backend
-  const eventsState = useState(SAMPLE_EVENTS)
 
   return (
-    <EventsContext value={eventsState}>
+    <>
       <nav aria-label="Staff pages" className="border-b border-line">
         <ul className="mx-auto flex max-w-page flex-wrap gap-x-7 px-4 md:px-10">
           {VIEWS.map((option) => (
@@ -69,7 +67,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <main className="mx-auto max-w-page px-4 pt-6 pb-12 md:px-10 md:pt-10 md:pb-18">
         {children}
       </main>
-    </EventsContext>
+    </>
   )
 }
 
@@ -556,53 +554,27 @@ function csvField(value: string): string {
 
 /* Manage events */
 
-type EventForm = Omit<PostdocEvent, 'id' | 'category' | 'status'> & {
-  category: EventCategory | ''
-}
-type FormField = keyof EventForm
-type FormErrors = Partial<Record<FormField, string>>
-
-const BLANK_FORM: EventForm = {
-  title: '',
-  date: '',
-  start: '',
-  end: '',
-  location: '',
-  category: '',
-  host: 'Office of Postdoctoral Affairs',
-  description: '',
-  link: '',
-}
-
-function validate(form: EventForm): FormErrors {
-  const errors: FormErrors = {}
-  if (!form.title.trim()) errors.title = 'Add a title.'
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) errors.date = 'Choose a date.'
-  if (!form.start) errors.start = 'Add a start time.'
-  if (form.start && form.end && form.end <= form.start)
-    errors.end = 'End time must be after the start time.'
-  if (!form.category)
-    errors.category = 'Choose a category so postdocs can filter for it.'
-  if (form.link.trim() && !/^https:\/\/\S+\.\S+/.test(form.link.trim()))
-    errors.link = 'Use a full link that starts with https://'
-  return errors
-}
+/** The result of the last save or delete. */
+type Notice = { kind: 'done' | 'failed'; text: string }
 
 const byDate = (a: PostdocEvent, b: PostdocEvent) =>
   (a.date + a.start).localeCompare(b.date + b.start)
 
-export function EventsView() {
-  const eventsState = use(EventsContext)
-  if (!eventsState) throw new Error('EventsView must be inside AdminShell')
-  const [events, setEvents] = eventsState
-  const [form, setForm] = useState(BLANK_FORM)
-  const [errors, setErrors] = useState<FormErrors>({})
+/**
+ * /admin/events. `events` comes from Supabase (null if it couldn't be
+ * loaded); saving or deleting reloads it from the server.
+ */
+export function EventsView({ events }: { events: PostdocEvent[] | null }) {
+  const [form, setForm] = useState(BLANK_EVENT_FORM)
+  const [errors, setErrors] = useState<EventFormErrors>({})
   // The event being edited, or null when the form makes a new one.
   const [editingId, setEditingId] = useState<string | null>(null)
   // The event whose delete is waiting for confirmation.
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   // Result of the last action, read out by screen readers.
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState<Notice | null>(null)
+  // A save or delete is on its way to Supabase.
+  const [saving, startSaving] = useTransition()
   const titleRef = useRef<HTMLInputElement>(null)
 
   const startForm = (values: EventForm, id: string | null) => {
@@ -615,11 +587,27 @@ export function EventsView() {
   const edit = ({ id, category, ...rest }: PostdocEvent) =>
     startForm({ ...rest, category }, id)
 
+  /** Shows the errors and focuses the first. Returns whether there were any. */
+  const showErrors = (found: EventFormErrors) => {
+    setErrors(found)
+    const firstError = Object.keys(found)[0]
+    if (firstError) document.getElementById(`event-${firstError}`)?.focus()
+    return Boolean(firstError)
+  }
+
+  const failed = (result: Extract<EventActionResult, { ok: false }>) => {
+    if (result.errors) showErrors(result.errors)
+    setNotice(result.message ? { kind: 'failed', text: result.message } : null)
+  }
+
   const remove = (event: PostdocEvent) => {
-    setEvents((prev) => prev.filter((e) => e.id !== event.id))
-    setConfirmingId(null)
-    if (editingId === event.id) startForm(BLANK_FORM, null)
-    setNotice(`Deleted “${event.title}.”`)
+    startSaving(async () => {
+      const result = await deleteEvent(event.id)
+      setConfirmingId(null)
+      if (!result.ok) return failed(result)
+      if (editingId === event.id) startForm(BLANK_EVENT_FORM, null)
+      setNotice({ kind: 'done', text: `Deleted “${event.title}.”` })
+    })
   }
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
@@ -627,40 +615,28 @@ export function EventsView() {
     const submitter = (e.nativeEvent as SubmitEvent).submitter
     const status: EventStatus =
       submitter?.dataset.status === 'draft' ? 'draft' : 'published'
-    const found = validate(form)
-    setErrors(found)
-    const firstError = Object.keys(found)[0]
-    if (firstError) {
-      document.getElementById(`event-${firstError}`)?.focus()
-      return
-    }
-    const event: PostdocEvent = {
-      ...form,
-      id: editingId ?? crypto.randomUUID(),
-      title: form.title.trim(),
-      link: form.link.trim(),
-      category: form.category as EventCategory,
-      status,
-    }
-    setEvents((prev) =>
-      editingId
-        ? prev.map((existing) => (existing.id === editingId ? event : existing))
-        : [...prev, event],
-    )
-    setForm(BLANK_FORM)
-    setEditingId(null)
-    setNotice(
-      status === 'published'
-        ? `Published “${event.title}.” Postdocs can see it on Events & programs now.`
-        : `Saved “${event.title}” as a draft. Postdocs can’t see it yet.`,
-    )
+    if (showErrors(validateEvent(form))) return
+    const title = form.title.trim()
+    startSaving(async () => {
+      const result = await saveEvent(editingId, form, status)
+      if (!result.ok) return failed(result)
+      setForm(BLANK_EVENT_FORM)
+      setEditingId(null)
+      setNotice({
+        kind: 'done',
+        text:
+          status === 'published'
+            ? `Published “${title}.” Postdocs can see it on Events & programs now.`
+            : `Saved “${title}” as a draft. Postdocs can’t see it yet.`,
+      })
+    })
   }
 
-  const field = (key: FormField) => ({
+  const field = (key: EventFormField) => ({
     id: `event-${key}`,
     error: errors[key],
   })
-  const setField = (key: FormField, value: string) =>
+  const setField = (key: EventFormField, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
   return (
@@ -676,16 +652,23 @@ export function EventsView() {
         <button
           type="button"
           className={PRIMARY_BUTTON}
-          onClick={() => startForm(BLANK_FORM, null)}
+          onClick={() => startForm(BLANK_EVENT_FORM, null)}
         >
           New event
         </button>
       </div>
 
       <div role="status">
-        {notice && (
+        {notice?.kind === 'done' && (
           <p className="mb-5 rounded bg-tint px-4 py-3 text-small text-tint-ink">
-            {notice}
+            {notice.text}
+          </p>
+        )}
+      </div>
+      <div role="alert">
+        {notice?.kind === 'failed' && (
+          <p className="mb-5 rounded border-[1.5px] border-late bg-paper px-4 py-3 text-small font-semibold text-late">
+            {notice.text}
           </p>
         )}
       </div>
@@ -705,14 +688,21 @@ export function EventsView() {
               </tr>
             </thead>
             <tbody>
-              {events.length === 0 && (
+              {events?.length === 0 && (
                 <tr>
                   <td colSpan={4} className={CELL}>
                     No events yet.
                   </td>
                 </tr>
               )}
-              {[...events].sort(byDate).map((event) =>
+              {events === null && (
+                <tr>
+                  <td colSpan={4} className={`${CELL} text-late`}>
+                    Couldn’t load events. Reload the page to try again.
+                  </td>
+                </tr>
+              )}
+              {[...(events ?? [])].sort(byDate).map((event) =>
                 event.id === confirmingId ? (
                   <tr
                     key={event.id}
@@ -730,7 +720,8 @@ export function EventsView() {
                         <button
                           type="button"
                           onClick={() => remove(event)}
-                          className="inline-flex min-h-9 cursor-pointer items-center rounded border-[1.5px] border-late bg-late px-3 py-1.5 text-small font-semibold text-paper"
+                          disabled={saving}
+                          className={`inline-flex min-h-9 cursor-pointer items-center rounded border-[1.5px] border-late bg-late px-3 py-1.5 text-small font-semibold text-paper ${BUSY}`}
                         >
                           Delete event
                         </button>
@@ -923,21 +914,23 @@ export function EventsView() {
               <button
                 type="submit"
                 data-status="published"
-                className={PRIMARY_BUTTON}
+                disabled={saving}
+                className={`${PRIMARY_BUTTON} ${BUSY}`}
               >
                 Publish
               </button>
               <button
                 type="submit"
                 data-status="draft"
-                className={GHOST_BUTTON}
+                disabled={saving}
+                className={`${GHOST_BUTTON} ${BUSY}`}
               >
                 Save as draft
               </button>
               {editingId && (
                 <button
                   type="button"
-                  onClick={() => startForm(BLANK_FORM, null)}
+                  onClick={() => startForm(BLANK_EVENT_FORM, null)}
                   className={`${LINK_BUTTON} text-link`}
                 >
                   Cancel

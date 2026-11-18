@@ -8,7 +8,12 @@ import type { Visa } from '#/data/checklist'
 import { TASKS } from '#/data/checklist'
 import type { PostdocEvent } from '#/data/events'
 import { appliesTo, nextTask, taskStatus } from '#/lib/checklist'
-import { daysBetween, formatDate, parseDate } from '#/lib/dates'
+import {
+  daysBetween,
+  formatDate,
+  formatTimeRange,
+  parseDate,
+} from '#/lib/dates'
 import { buildPlan } from '#/lib/plan'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -20,7 +25,6 @@ const VISA: Visa = 'j1'
 
 // TODO: from the backend. Nothing is set up yet, so these are empty.
 const COMING_UP: { date: Date; title: string }[] = []
-const UPCOMING_EVENTS: PostdocEvent[] = []
 const WORKBOOK_MODULES_DONE = 0
 
 const CARD_SHAPE = 'rounded bg-paper p-4.5 shadow-card md:p-6'
@@ -32,11 +36,17 @@ const MORE_LINK = 'mt-3 inline-block font-semibold'
 export function Home({
   name,
   today: todayIso,
+  events,
+  isAdmin,
 }: {
   /** First name to greet, or "Guest". */
   name: string
   /** 'YYYY-MM-DD' */
   today: string
+  /** The next few published events, soonest first. null if they didn't load. */
+  events: PostdocEvent[] | null
+  /** OPA staff, who get a link to manage events. */
+  isAdmin: boolean
 }) {
   // Ids of the tasks marked done here. None are done until there's a backend.
   // TODO: share saved progress with the Checklist page
@@ -197,22 +207,33 @@ export function Home({
             <h2 id="events-h" className="mb-2 text-h3">
               Upcoming events
             </h2>
-            {UPCOMING_EVENTS.length > 0 ? (
+            {events === null ? (
+              <p className="text-small text-late">
+                Couldn’t load events. Reload the page to try again.
+              </p>
+            ) : events.length > 0 ? (
               <DateList
-                items={UPCOMING_EVENTS.map((event) => ({
+                items={events.map((event) => ({
                   key: event.id,
                   date: parseDate(event.date),
                   title: event.title,
-                  detail: event.host,
+                  detail: `${formatTimeRange(event.start, event.end)} · ${event.host}`,
                 }))}
               />
             ) : (
               <p className="text-small text-ink-2">No upcoming events.</p>
             )}
-            {/* TODO: link to Events & programs once it's built */}
-            <a href="#" className={MORE_LINK}>
-              All events
-            </a>
+            <div className="flex flex-wrap gap-x-5">
+              {/* TODO: link to Events & programs once it's built */}
+              <a href="#" className={MORE_LINK}>
+                All events
+              </a>
+              {isAdmin && (
+                <Link href="/admin/events" className={MORE_LINK}>
+                  Manage events
+                </Link>
+              )}
+            </div>
           </section>
         </aside>
       </div>

@@ -21,7 +21,12 @@ const NEW_HAVEN_DAY = new Intl.DateTimeFormat('en-US', {
  * the same day for every postdoc and for the server, wherever they are.
  */
 export function todayInNewHaven(): string {
-  const parts = NEW_HAVEN_DAY.formatToParts(new Date())
+  return dateInNewHaven(new Date())
+}
+
+/** The date in New Haven at that moment, as 'YYYY-MM-DD'. */
+export function dateInNewHaven(moment: Date): string {
+  const parts = NEW_HAVEN_DAY.formatToParts(moment)
   const part = (type: string) => parts.find((p) => p.type === type)!.value
   return `${part('year')}-${part('month')}-${part('day')}`
 }

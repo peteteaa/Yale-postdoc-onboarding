@@ -25,11 +25,13 @@ import {
   MAX_OWN_OPTION_LENGTH,
   MAX_PICKS,
   MAX_TEXT_LENGTH,
+  MODULES,
   SECTIONS,
   sectionHref,
   sectionPrompts,
 } from '#/data/workbook'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import type { FormEvent, ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -42,7 +44,11 @@ const GHOST_BUTTON =
 /** The section to focus when its page opens, after clicking Previous or Next. */
 let focusOnArrival: string | null = null
 
-/** The workbook's heading and privacy note, around each section's page. */
+/**
+ * The workbook's heading, privacy note, and table of contents, around each
+ * section's page. Used by the workbook layout, so it stays while moving
+ * between sections.
+ */
 export function WorkbookShell({
   loadError,
   children,
@@ -61,16 +67,99 @@ export function WorkbookShell({
       </div>
       <PrivacyNote />
 
-      {/* Without the saved answers, saving would overwrite them, so don't show the form. */}
-      {loadError ? (
-        <p role="alert" className="rounded bg-wash px-4 py-3">
-          Your answers couldn’t be loaded right now. Try again in a few minutes.
-        </p>
-      ) : (
-        // TODO: list the modules and their sections, to move around the workbook
-        children
-      )}
+      <div className="lg:grid lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:items-start lg:gap-10">
+        <TableOfContents />
+        <div>
+          {/* Without the saved answers, saving would overwrite them, so don't show the form. */}
+          {loadError ? (
+            <p role="alert" className="rounded bg-wash px-4 py-3">
+              Your answers couldn’t be loaded right now. Try again in a few
+              minutes.
+            </p>
+          ) : (
+            children
+          )}
+        </div>
+      </div>
     </main>
+  )
+}
+
+/**
+ * Every section, under its module, with the current one marked. Beside the
+ * section on wide screens; behind an "All sections" button on narrow ones.
+ */
+function TableOfContents() {
+  const pathname = usePathname()
+  const current = SECTIONS.findIndex(
+    ({ module, section }) => sectionHref(module.id, section.id) === pathname,
+  )
+  const [open, setOpen] = useState(false)
+  // Close the list on moving to another page, including with Back later.
+  const [openedOn, setOpenedOn] = useState(pathname)
+  if (pathname !== openedOn) {
+    setOpenedOn(pathname)
+    setOpen(false)
+  }
+  const toggle = useRef<HTMLButtonElement>(null)
+
+  return (
+    <nav
+      aria-label="Workbook sections"
+      className="mb-8 border-y border-line lg:sticky lg:top-6 lg:mb-0 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto lg:border-0"
+    >
+      <button
+        ref={toggle}
+        type="button"
+        aria-expanded={open}
+        aria-controls="workbook-sections"
+        onClick={() => setOpen(!open)}
+        className="flex min-h-12.5 w-full cursor-pointer items-center justify-between gap-4 text-medium font-semibold lg:hidden"
+      >
+        All sections
+        {current >= 0 && (
+          <span className="font-normal text-ink-2">
+            {current + 1} of {SECTIONS.length}
+          </span>
+        )}
+      </button>
+      <ol
+        id="workbook-sections"
+        className={`${open ? 'grid' : 'hidden'} gap-5 pt-2 pb-5 lg:grid lg:p-0`}
+      >
+        {MODULES.map((module) => (
+          <li key={module.id}>
+            <p className="mb-1.5 text-label font-semibold tracking-label text-ink-2 uppercase">
+              {module.title}
+            </p>
+            <ol className="grid gap-0.5">
+              {module.sections.map((section) => {
+                const href = sectionHref(module.id, section.id)
+                return (
+                  <li key={section.id}>
+                    <Link
+                      href={href}
+                      aria-current={href === pathname ? 'page' : undefined}
+                      onClick={() => {
+                        // On narrow screens, close the list and keep focus
+                        // where it was opened from, not on a hidden link.
+                        if (open) {
+                          setOpen(false)
+                          toggle.current?.focus()
+                        }
+                      }}
+                      className="block rounded px-3 py-2 text-small leading-snug text-pretty text-ink no-underline hover:bg-wash aria-[current=page]:bg-tint aria-[current=page]:font-semibold aria-[current=page]:text-tint-ink aria-[current=page]:shadow-[inset_3px_0_0_var(--color-yale-blue)]"
+                    >
+                      {section.title}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ol>
+          </li>
+        ))}
+      </ol>
+    </nav>
   )
 }
 

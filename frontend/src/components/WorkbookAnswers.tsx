@@ -198,6 +198,19 @@ function useChanges(userId: string | null) {
   return current.userId === userId ? current : NO_CHANGES
 }
 
+/** Every section's answers, with any changes. */
+export function useAllAnswers() {
+  const saved = useSaved()
+  const changed = useChanges(saved.userId).answers
+  return useMemo(() => {
+    const all: WorkbookAnswers = { ...saved.answers }
+    for (const [sectionId, answers] of Object.entries(changed)) {
+      all[sectionId] = { ...saved.answers[sectionId], ...answers }
+    }
+    return all
+  }, [saved.answers, changed])
+}
+
 /** The ids of sections whose changes didn't save. */
 export function useFailedSaves() {
   const { status } = useChanges(useSaved().userId)

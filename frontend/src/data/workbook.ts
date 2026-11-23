@@ -45,6 +45,8 @@ export type PickPrompt = PromptBase & {
   allowOwn: boolean
   /** Chips for short options (the default), or a checklist for long ones. */
   layout?: 'chips' | 'checklist'
+  /** A to-do list: answered only once every item is ticked. */
+  todo?: boolean
   /** Web pages for some of the options, by option. Shown in checklists. */
   links?: Record<string, string>
 }
@@ -187,6 +189,58 @@ export function sectionPrompts(section: WorkbookSection): AnswerPrompt[] {
         )
       : [prompt],
   )
+}
+
+/** How far along someone is with a section. */
+export type SectionStatus = 'done' | 'in-progress' | 'not-started'
+
+const filled = (text: string | undefined) => (text ?? '').trim() !== ''
+
+/** Whether `answer` fully answers `prompt`. */
+function isAnswered(prompt: AnswerPrompt, answer: Answer | undefined) {
+  switch (prompt.kind) {
+    case 'text':
+    case 'date':
+    case 'choice':
+      return typeof answer === 'string' && filled(answer)
+    case 'pick':
+      if (!Array.isArray(answer)) return false
+      return prompt.todo
+        ? prompt.options.every((option) => answer.includes(option))
+        : answer.length >= (prompt.min ?? 1)
+    case 'table':
+      // Every box filled.
+      return (
+        Array.isArray(answer) &&
+        answer.length === prompt.rows * prompt.columns.length &&
+        answer.every(filled)
+      )
+  }
+}
+
+/**
+ * A section is done once every question showing is answered, leaving out
+ * ones marked optional. Null for sections with nothing to answer.
+ */
+export function sectionStatus(
+  section: WorkbookSection,
+  answers: SectionAnswers = {},
+): SectionStatus | null {
+  const showing = sectionPrompts(section).filter(
+    (prompt) =>
+      !prompt.showIf ||
+      answers[prompt.showIf.promptId] === prompt.showIf.answer,
+  )
+  if (showing.length === 0) return null
+  const required = showing.filter((p) => !(p.kind === 'text' && p.optional))
+  if (required.every((prompt) => isAnswered(prompt, answers[prompt.id]))) {
+    return 'done'
+  }
+  const started = showing.some((prompt) => {
+    const answer = answers[prompt.id]
+    return typeof answer === 'string' ? filled(answer) : answer?.some(filled)
+  })
+  return started ? 'in-progress' : 'not-started'
 }
 
 /** One of the workbook's top-level sections, e.g. Section 1. */
@@ -1430,6 +1484,7 @@ export const MODULES: WorkbookModule[] = [
                 hint: 'Suggestion: Block off 30–60 minutes to do this. Complete this in Week 5.',
                 allowOwn: false,
                 layout: 'checklist',
+                todo: true,
                 options: [
                   'Fill out “Add more detail” under Project Title(s) or Research Area(s) with full details about your role’s responsibilities & projects',
                   'Fill out “Add more detail” under Identify Your Postdoc Goals with more details about your goal(s)',
@@ -1442,6 +1497,7 @@ export const MODULES: WorkbookModule[] = [
                 hint: 'Suggestion: Block off 30–60 minutes to do this. Complete this in Week 6.',
                 allowOwn: false,
                 layout: 'checklist',
+                todo: true,
                 options: [
                   'Fill out Boundary Setting & Time Management and check out the time management resources',
                   'Check in on your wellness goals and accountability: make adjustments and/or explore further resources as needed',
@@ -1454,6 +1510,7 @@ export const MODULES: WorkbookModule[] = [
                 hint: 'Suggestion: Block off 30 minutes to do this. Complete this in Week 7.',
                 allowOwn: false,
                 layout: 'checklist',
+                todo: true,
                 options: [
                   'Reflect on events or groups you’ve engaged with thus far in terms of socializing and community',
                   'Decide and sign up for an event either with the same group or try out a new one',
@@ -1466,6 +1523,7 @@ export const MODULES: WorkbookModule[] = [
                 hint: 'Reflect on your skills development and career discernment activities thus far. Suggestion: Block off 60–90 minutes to do this. Complete this in Week 8.',
                 allowOwn: false,
                 layout: 'checklist',
+                todo: true,
                 options: [
                   'Look back at the skills areas and resources/initial actions in Mentorship & Your Skills Development, along with the next career steps you are considering. Make any changes to what skills you wish to prioritize for development.',
                   // The workbook has "identify: what kinds of resources do you
@@ -1490,6 +1548,7 @@ export const MODULES: WorkbookModule[] = [
                 hint: 'Suggestion: Block off 30–60 minutes to do this. Complete this in Week 9.',
                 allowOwn: false,
                 layout: 'checklist',
+                todo: true,
                 // The workbook says "Fill our".
                 options: [
                   'Schedule the Initial IDP meeting with your faculty mentor',
@@ -1504,6 +1563,7 @@ export const MODULES: WorkbookModule[] = [
                 hint: 'Suggestion: Block off 60–90 minutes to do this. Complete this in Week 10.',
                 allowOwn: false,
                 layout: 'checklist',
+                todo: true,
                 options: [
                   'Fill out sections 4, 5, 6, 7 and 8 of your Initial IDP',
                 ],
@@ -1515,6 +1575,7 @@ export const MODULES: WorkbookModule[] = [
                 hint: 'Suggestion: Block off 30–60 minutes to do this. Complete this in Week 11.',
                 allowOwn: false,
                 layout: 'checklist',
+                todo: true,
                 options: [
                   'Now knowing more about your faculty mentor and your own needs, fill out Identifying Your Specific Mentoring Needs (or note down your own additional/different needs)',
                   'Continue filling in Developing Your Mentoring Team with any additional mentors',
@@ -1528,6 +1589,7 @@ export const MODULES: WorkbookModule[] = [
                 hint: 'Suggestion: Block off 60–90 minutes to do this. Complete this in Week 12.',
                 allowOwn: false,
                 layout: 'checklist',
+                todo: true,
                 // The workbook says "Share Initial IDP".
                 options: [
                   'Make any final inputs or changes to your Initial IDP',
@@ -1557,5 +1619,21 @@ export function sectionHref(moduleId: string, sectionId: string) {
 export function findSection(moduleId: string, sectionId: string) {
   return SECTIONS.find(
     ({ module, section }) => module.id === moduleId && section.id === sectionId,
+  )
+}
+
+/**
+ * The first of `sections` that has questions and isn't done, or the first
+ * section if they're all done.
+ */
+export function firstUnfinished(
+  sections: typeof SECTIONS,
+  answers: WorkbookAnswers,
+) {
+  return (
+    sections.find(({ section }) => {
+      const status = sectionStatus(section, answers[section.id])
+      return status !== null && status !== 'done'
+    }) ?? sections[0]
   )
 }

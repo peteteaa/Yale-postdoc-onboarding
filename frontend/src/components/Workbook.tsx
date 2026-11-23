@@ -1,9 +1,11 @@
 'use client'
 
 import { PRIMARY_BUTTON } from '#/components/Form'
+import { StatusIcon } from '#/components/StatusIcon'
 import type { AnswerUpdate, SaveStatus } from '#/components/WorkbookAnswers'
 import {
   retrySave,
+  useAllAnswers,
   useFailedSaves,
   useSectionAnswers,
 } from '#/components/WorkbookAnswers'
@@ -16,6 +18,7 @@ import type {
   PickPrompt,
   Prompt,
   SectionAnswers,
+  SectionStatus,
   TablePrompt,
   TextPrompt,
   WorkbookSection,
@@ -29,6 +32,7 @@ import {
   SECTIONS,
   sectionHref,
   sectionPrompts,
+  sectionStatus,
 } from '#/data/workbook'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -40,6 +44,12 @@ const INPUT =
   'w-full min-w-0 rounded border-[1.5px] border-field-line bg-paper px-3 py-2.5 text-large leading-[1.45]'
 const GHOST_BUTTON =
   'inline-flex min-h-11 cursor-pointer items-center justify-center rounded border-[1.5px] border-yale-blue bg-paper px-4.5 py-2.5 leading-tight font-semibold text-yale-blue hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-paper'
+
+const STATUS_TEXT: Record<SectionStatus, string> = {
+  done: 'Done',
+  'in-progress': 'In progress',
+  'not-started': 'Not started',
+}
 
 /** The section to focus when its page opens, after clicking Previous or Next. */
 let focusOnArrival: string | null = null
@@ -102,6 +112,7 @@ function TableOfContents() {
     setOpen(false)
   }
   const toggle = useRef<HTMLButtonElement>(null)
+  const answers = useAllAnswers()
 
   return (
     <nav
@@ -135,6 +146,7 @@ function TableOfContents() {
             <ol className="grid gap-0.5">
               {module.sections.map((section) => {
                 const href = sectionHref(module.id, section.id)
+                const status = sectionStatus(section, answers[section.id])
                 return (
                   <li key={section.id}>
                     <Link
@@ -148,9 +160,22 @@ function TableOfContents() {
                           toggle.current?.focus()
                         }
                       }}
-                      className="block rounded px-3 py-2 text-small leading-snug text-pretty text-ink no-underline hover:bg-wash aria-[current=page]:bg-tint aria-[current=page]:font-semibold aria-[current=page]:text-tint-ink aria-[current=page]:shadow-[inset_3px_0_0_var(--color-yale-blue)]"
+                      className="flex gap-2.5 rounded px-3 py-2 text-small leading-snug text-pretty text-ink no-underline hover:bg-wash aria-[current=page]:bg-tint aria-[current=page]:font-semibold aria-[current=page]:text-tint-ink aria-[current=page]:shadow-[inset_3px_0_0_var(--color-yale-blue)]"
                     >
-                      {section.title}
+                      {/* Sections with nothing to answer get no status, but keep their title in line. */}
+                      {status ? (
+                        <StatusIcon status={status} />
+                      ) : (
+                        <span className="size-5 shrink-0" />
+                      )}
+                      <span>
+                        {section.title}
+                        {status && (
+                          <span className="sr-only">
+                            , {STATUS_TEXT[status]}
+                          </span>
+                        )}
+                      </span>
                     </Link>
                   </li>
                 )

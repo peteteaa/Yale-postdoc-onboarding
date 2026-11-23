@@ -72,17 +72,15 @@ export function useAutosave<T>(
 export function SaveMessage({
   status,
   onRetry,
-  className = 'mt-5',
 }: {
   status: SaveStatus
   onRetry: () => void
-  className?: string
 }) {
   if (status === 'error') {
     return (
       <div
         role="alert"
-        className={`${className} flex flex-wrap items-center gap-x-4 gap-y-2`}
+        className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2"
       >
         <p className="font-semibold text-late">Your changes didn’t save.</p>
         <button type="button" onClick={onRetry} className={GHOST_BUTTON}>
@@ -93,7 +91,7 @@ export function SaveMessage({
   }
   // Takes up its line even when empty, so content below doesn't jump when it appears.
   return (
-    <p className={`${className} min-h-[1lh] text-small text-ink-2`}>
+    <p className="mt-5 min-h-[1lh] text-small text-ink-2">
       {status === 'saving' && 'Saving…'}
       {status === 'saved' && 'Saved'}
     </p>

@@ -49,15 +49,22 @@ export function IdpBuilder({
   }))
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState(false)
-  const { status, queueSave, saveNow } = useAutosave(saveIdpAnswers)
+  // One save per card, so each card says whether its own changes saved, like
+  // the workbook's sections.
+  const detailsSave = useAutosave(saveIdpAnswers)
+  const questionsSave = useAutosave(saveIdpAnswers)
+  const alignmentSave = useAutosave(saveIdpAnswers)
+  const summarySave = useAutosave(saveIdpAnswers)
 
   const setField = (field: IdpTextField, value: string) => {
     setAnswers((prev) => ({ ...prev, [field]: value }))
-    queueSave(idpFieldId(field), value)
+    const save = field === 'summaryNotes' ? summarySave : detailsSave
+    save.queueSave(idpFieldId(field), value)
   }
   const setMapped = (map: IdpMapField, id: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [map]: { ...prev[map], [id]: value } }))
-    queueSave(idpFieldId(map, id), value)
+    const save = map === 'alignment' ? alignmentSave : questionsSave
+    save.queueSave(idpFieldId(map, id), value)
   }
 
   const download = async () => {
@@ -110,8 +117,7 @@ export function IdpBuilder({
         {!loadError && downloadButton}
       </div>
       <p className="mb-10 w-fit max-w-full rounded bg-wash px-3.5 py-3 text-small text-ink-2">
-        Your answers save as you type, and only you can see them. Nothing is
-        shared until you send the PDF yourself.
+        Nothing is shared until you send the PDF yourself.
       </p>
 
       {/* Without the saved answers, saving would overwrite them, so don't show the form. */}
@@ -142,6 +148,10 @@ export function IdpBuilder({
                 onChange={(v) => setField('department', v)}
               />
             </div>
+            <SaveMessage
+              status={detailsSave.status}
+              onRetry={detailsSave.saveNow}
+            />
           </Card>
 
           <Card
@@ -162,6 +172,10 @@ export function IdpBuilder({
                 />
               ))}
             </ol>
+            <SaveMessage
+              status={questionsSave.status}
+              onRetry={questionsSave.saveNow}
+            />
           </Card>
 
           <Card
@@ -193,6 +207,10 @@ export function IdpBuilder({
                 )
               })}
             </div>
+            <SaveMessage
+              status={alignmentSave.status}
+              onRetry={alignmentSave.saveNow}
+            />
           </Card>
 
           <Card
@@ -217,6 +235,10 @@ export function IdpBuilder({
               onChange={(e) => setField('summaryNotes', e.target.value)}
               className={TEXTAREA}
             />
+            <SaveMessage
+              status={summarySave.status}
+              onRetry={summarySave.saveNow}
+            />
           </Card>
 
           <Card title="Acknowledgement">
@@ -229,12 +251,6 @@ export function IdpBuilder({
             </p>
             {downloadButton}
           </Card>
-        </div>
-      )}
-      {/* Pinned to the bottom of the screen, since the form is long. */}
-      {!loadError && status !== 'idle' && (
-        <div className="sticky bottom-0 -mx-4 mt-5 border-t border-card-line bg-paper px-4 md:-mx-10 md:px-10">
-          <SaveMessage status={status} onRetry={saveNow} className="my-3" />
         </div>
       )}
     </main>

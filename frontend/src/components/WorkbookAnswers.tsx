@@ -1,6 +1,8 @@
 'use client'
 
 import { saveAnswers } from '#/app/workbook/actions'
+import type { SaveStatus } from '#/components/Autosave'
+import { SAVE_DELAY_MS } from '#/components/Autosave'
 import type { Answer, SectionAnswers, WorkbookAnswers } from '#/data/workbook'
 import type { ReactNode } from 'react'
 import {
@@ -14,11 +16,6 @@ import {
 
 /** A new answer, or a function that builds it from the latest one. */
 export type AnswerUpdate = Answer | ((prev: Answer | undefined) => Answer)
-
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
-
-/** How long to wait after the last change before saving. */
-const SAVE_DELAY_MS = 1000
 
 /*
  * Answers changed in this tab, and their saving, live here in the module

@@ -1,8 +1,9 @@
 'use client'
 
+import { SaveMessage } from '#/components/Autosave'
 import { PRIMARY_BUTTON } from '#/components/Form'
 import { StatusIcon } from '#/components/StatusIcon'
-import type { AnswerUpdate, SaveStatus } from '#/components/WorkbookAnswers'
+import type { AnswerUpdate } from '#/components/WorkbookAnswers'
 import {
   retrySave,
   useAllAnswers,
@@ -584,35 +585,6 @@ function PromptList({
           )
       }
     })
-}
-
-function SaveMessage({
-  status,
-  onRetry,
-}: {
-  status: SaveStatus
-  onRetry: () => void
-}) {
-  if (status === 'error') {
-    return (
-      <div
-        role="alert"
-        className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2"
-      >
-        <p className="font-semibold text-late">Your changes didn’t save.</p>
-        <button type="button" onClick={onRetry} className={GHOST_BUTTON}>
-          Try again
-        </button>
-      </div>
-    )
-  }
-  // Takes up its line even when empty, so cards below don't jump when it appears.
-  return (
-    <p className="mt-5 min-h-[1lh] text-small text-ink-2">
-      {status === 'saving' && 'Saving…'}
-      {status === 'saved' && 'Saved'}
-    </p>
-  )
 }
 
 function PrivacyNote() {

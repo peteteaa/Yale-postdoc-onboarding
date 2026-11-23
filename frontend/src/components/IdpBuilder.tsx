@@ -1,20 +1,25 @@
 'use client'
 
+import { saveIdpAnswers } from '#/app/idp/actions'
+import { SaveMessage, useAutosave } from '#/components/Autosave'
 import { BUSY, INPUT, PRIMARY_BUTTON } from '#/components/Form'
-import type { IdpAnswers, IdpQuestion } from '#/data/idp'
+import type {
+  IdpAnswers,
+  IdpMapField,
+  IdpQuestion,
+  IdpTextField,
+} from '#/data/idp'
 import {
-  EMPTY_IDP,
   IDP_ACKNOWLEDGEMENT,
   IDP_ALIGNMENT,
   IDP_INTRO,
   IDP_QUESTIONS,
   IDP_SUMMARY,
+  idpFieldId,
 } from '#/data/idp'
 import { formatDate, parseDate, todayInNewHaven } from '#/lib/dates'
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
-
-type AnswerMap = 'responses' | 'mentorInput' | 'alignment'
+import { useState } from 'react'
 
 const CARD = 'rounded border border-card-line bg-paper p-4.5 shadow-card md:p-6'
 const TEXTAREA = `${INPUT} block min-h-21 resize-y`
@@ -26,37 +31,41 @@ const SMALL_LABEL =
  * button that turns the questions and answers into a PDF to share with your
  * mentor.
  */
-export function IdpBuilder({ defaultName }: { defaultName: string }) {
-  // TODO: save to the backend instead of keeping answers in memory, and fill
-  // in answers from the workbook sections each question draws on.
-  const [answers, setAnswers] = useState<IdpAnswers>({
-    ...EMPTY_IDP,
-    postdocName: defaultName,
-  })
+export function IdpBuilder({
+  savedAnswers,
+  loadError,
+  defaultName,
+}: {
+  savedAnswers: IdpAnswers
+  /** Set when the saved answers couldn't be loaded. */
+  loadError: boolean
+  defaultName: string
+}) {
+  // TODO: fill in answers from the workbook sections each question draws on.
+  const [answers, setAnswers] = useState<IdpAnswers>(() => ({
+    ...savedAnswers,
+    // Start with their name until they've saved one of their own.
+    postdocName: savedAnswers.postdocName || defaultName,
+  }))
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState(false)
+  // One save per card, so each card says whether its own changes saved, like
+  // the workbook's sections.
+  const detailsSave = useAutosave(saveIdpAnswers)
+  const questionsSave = useAutosave(saveIdpAnswers)
+  const alignmentSave = useAutosave(saveIdpAnswers)
+  const summarySave = useAutosave(saveIdpAnswers)
 
-  const hasAnswers = [
-    ...Object.values(answers.responses),
-    ...Object.values(answers.mentorInput),
-    ...Object.values(answers.alignment),
-    answers.summaryNotes,
-  ].some((value) => value?.trim())
-
-  // Nothing is saved yet, so warn before leaving with answers on the page.
-  useEffect(() => {
-    if (!hasAnswers) return
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [hasAnswers])
-
-  const setField = (
-    field: 'postdocName' | 'mentorName' | 'department' | 'summaryNotes',
-    value: string,
-  ) => setAnswers((prev) => ({ ...prev, [field]: value }))
-  const setMapped = (map: AnswerMap, id: string, value: string) =>
+  const setField = (field: IdpTextField, value: string) => {
+    setAnswers((prev) => ({ ...prev, [field]: value }))
+    const save = field === 'summaryNotes' ? summarySave : detailsSave
+    save.queueSave(idpFieldId(field), value)
+  }
+  const setMapped = (map: IdpMapField, id: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [map]: { ...prev[map], [id]: value } }))
+    const save = map === 'alignment' ? alignmentSave : questionsSave
+    save.queueSave(idpFieldId(map, id), value)
+  }
 
   const download = async () => {
     setExporting(true)
@@ -105,116 +114,145 @@ export function IdpBuilder({ defaultName }: { defaultName: string }) {
             your 3-month meeting.
           </p>
         </div>
-        {downloadButton}
+        {!loadError && downloadButton}
       </div>
       <p className="mb-10 w-fit max-w-full rounded bg-wash px-3.5 py-3 text-small text-ink-2">
-        Answers aren’t saved yet, so download the PDF before you leave this
-        page. Nothing is shared until you send the PDF yourself.
+        Nothing is shared until you send the PDF yourself.
       </p>
 
-      <div className="grid grid-cols-1 gap-5">
-        <Card title="Your details">
-          <div className="grid gap-4.5 md:grid-cols-2">
-            <TextInput
-              id="idp-postdoc"
-              label="Postdoctoral Associate/Fellow (Name)"
-              value={answers.postdocName}
-              onChange={(v) => setField('postdocName', v)}
-            />
-            <TextInput
-              id="idp-mentor"
-              label="Faculty/Research Mentor (Name)"
-              value={answers.mentorName}
-              onChange={(v) => setField('mentorName', v)}
-            />
-            <TextInput
-              id="idp-department"
-              label="Department"
-              value={answers.department}
-              onChange={(v) => setField('department', v)}
-            />
-          </div>
-        </Card>
-
-        <Card title="Guidance for the Postdoc" description={IDP_INTRO.guidance}>
-          <ol className="grid gap-8">
-            {IDP_QUESTIONS.map((question) => (
-              <QuestionField
-                key={question.id}
-                question={question}
-                response={answers.responses[question.id] ?? ''}
-                mentorInput={answers.mentorInput[question.id] ?? ''}
-                onResponse={(v) => setMapped('responses', question.id, v)}
-                onMentorInput={(v) => setMapped('mentorInput', question.id, v)}
+      {/* Without the saved answers, saving would overwrite them, so don't show the form. */}
+      {loadError ? (
+        <p role="alert" className="rounded bg-wash px-4 py-3">
+          Your answers couldn’t be loaded right now. Try again in a few minutes.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-5">
+          <Card title="Your details">
+            <div className="grid gap-4.5 md:grid-cols-2">
+              <TextInput
+                id="idp-postdoc"
+                label="Postdoctoral Associate/Fellow (Name)"
+                value={answers.postdocName}
+                onChange={(v) => setField('postdocName', v)}
               />
-            ))}
-          </ol>
-        </Card>
+              <TextInput
+                id="idp-mentor"
+                label="Faculty/Research Mentor (Name)"
+                value={answers.mentorName}
+                onChange={(v) => setField('mentorName', v)}
+              />
+              <TextInput
+                id="idp-department"
+                label="Department"
+                value={answers.department}
+                onChange={(v) => setField('department', v)}
+              />
+            </div>
+            <SaveMessage
+              status={detailsSave.status}
+              onRetry={detailsSave.saveNow}
+            />
+          </Card>
 
-        <Card
-          title="Aligning Expectations with Your Mentor"
-          description="If you did not get an opportunity to discuss the areas below in your first few weeks of your postdoc training, take the opportunity to do so now. If you have already discussed any/all of these areas, take a few minutes to revisit and make any changes as needed."
-        >
-          <div className="grid gap-6">
-            {IDP_ALIGNMENT.map((row) => {
-              const id = `idp-align-${row.id}`
-              return (
-                <div key={row.id}>
-                  <label
-                    htmlFor={id}
-                    className="mb-1.5 block leading-[1.4] font-semibold text-pretty"
-                  >
-                    {row.question}
-                  </label>
-                  <textarea
-                    id={id}
-                    rows={2}
-                    placeholder="Notes from discussion"
-                    value={answers.alignment[row.id] ?? ''}
-                    onChange={(e) =>
-                      setMapped('alignment', row.id, e.target.value)
-                    }
-                    className={TEXTAREA}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        </Card>
-
-        <Card
-          title="Summary & Mutual Expectations"
-          description={IDP_SUMMARY.intro}
-        >
-          <BulletList items={IDP_SUMMARY.schedule} />
-          <h3 className="mt-5 mb-1.5 font-sans text-h4 font-bold">
-            Individual and Mutual Commitments
-          </h3>
-          <BulletList items={IDP_SUMMARY.commitments} />
-          <label
-            htmlFor="idp-summary-notes"
-            className="mt-6 mb-1.5 block font-semibold"
+          <Card
+            title="Guidance for the Postdoc"
+            description={IDP_INTRO.guidance}
           >
-            Additional notes
-          </label>
-          <textarea
-            id="idp-summary-notes"
-            rows={3}
-            value={answers.summaryNotes}
-            onChange={(e) => setField('summaryNotes', e.target.value)}
-            className={TEXTAREA}
-          />
-        </Card>
+            <ol className="grid gap-8">
+              {IDP_QUESTIONS.map((question) => (
+                <QuestionField
+                  key={question.id}
+                  question={question}
+                  response={answers.responses[question.id] ?? ''}
+                  mentorInput={answers.mentorInput[question.id] ?? ''}
+                  onResponse={(v) => setMapped('responses', question.id, v)}
+                  onMentorInput={(v) =>
+                    setMapped('mentorInput', question.id, v)
+                  }
+                />
+              ))}
+            </ol>
+            <SaveMessage
+              status={questionsSave.status}
+              onRetry={questionsSave.saveNow}
+            />
+          </Card>
 
-        <Card title="Acknowledgement">
-          <p className="mb-3 max-w-[70ch] text-pretty">{IDP_ACKNOWLEDGEMENT}</p>
-          <p className="mb-6 text-small text-ink-2">
-            The PDF has signature and date lines for you and your mentor. Sign
-            it together at your 3-month meeting.
-          </p>
-          {downloadButton}
-        </Card>
-      </div>
+          <Card
+            title="Aligning Expectations with Your Mentor"
+            description="If you did not get an opportunity to discuss the areas below in your first few weeks of your postdoc training, take the opportunity to do so now. If you have already discussed any/all of these areas, take a few minutes to revisit and make any changes as needed."
+          >
+            <div className="grid gap-6">
+              {IDP_ALIGNMENT.map((row) => {
+                const id = `idp-align-${row.id}`
+                return (
+                  <div key={row.id}>
+                    <label
+                      htmlFor={id}
+                      className="mb-1.5 block leading-[1.4] font-semibold text-pretty"
+                    >
+                      {row.question}
+                    </label>
+                    <textarea
+                      id={id}
+                      rows={2}
+                      placeholder="Notes from discussion"
+                      value={answers.alignment[row.id] ?? ''}
+                      onChange={(e) =>
+                        setMapped('alignment', row.id, e.target.value)
+                      }
+                      className={TEXTAREA}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+            <SaveMessage
+              status={alignmentSave.status}
+              onRetry={alignmentSave.saveNow}
+            />
+          </Card>
+
+          <Card
+            title="Summary & Mutual Expectations"
+            description={IDP_SUMMARY.intro}
+          >
+            <BulletList items={IDP_SUMMARY.schedule} />
+            <h3 className="mt-5 mb-1.5 font-sans text-h4 font-bold">
+              Individual and Mutual Commitments
+            </h3>
+            <BulletList items={IDP_SUMMARY.commitments} />
+            <label
+              htmlFor="idp-summary-notes"
+              className="mt-6 mb-1.5 block font-semibold"
+            >
+              Additional notes
+            </label>
+            <textarea
+              id="idp-summary-notes"
+              rows={3}
+              value={answers.summaryNotes}
+              onChange={(e) => setField('summaryNotes', e.target.value)}
+              className={TEXTAREA}
+            />
+            <SaveMessage
+              status={summarySave.status}
+              onRetry={summarySave.saveNow}
+            />
+          </Card>
+
+          <Card title="Acknowledgement">
+            <p className="mb-3 max-w-[70ch] text-pretty">
+              {IDP_ACKNOWLEDGEMENT}
+            </p>
+            <p className="mb-6 text-small text-ink-2">
+              The PDF has signature and date lines for you and your mentor. Sign
+              it together at your 3-month meeting.
+            </p>
+            {downloadButton}
+          </Card>
+        </div>
+      )}
     </main>
   )
 }

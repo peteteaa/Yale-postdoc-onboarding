@@ -1,15 +1,11 @@
-import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-import { Workbook } from '#/components/Workbook'
-import { getResources } from '#/lib/resources'
+import { SECTIONS, sectionHref } from '#/data/workbook'
 
-export const metadata: Metadata = {
-  title: 'Workbook | Yale University',
-}
-
-// The saved answers are loaded by the workbook layout.
-export default async function WorkbookPage() {
-  const resources = await getResources()
-
-  return <Workbook resources={resources.error ? null : resources.resources} />
+// Each section has its own page.
+// TODO: go to the first section they haven't finished, once sections show
+// whether they're done.
+export default function WorkbookPage() {
+  const { module, section } = SECTIONS[0]
+  redirect(sectionHref(module.id, section.id))
 }

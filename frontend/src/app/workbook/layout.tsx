@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 
+import { WorkbookShell } from '#/components/Workbook'
 import { WorkbookAnswersProvider } from '#/components/WorkbookAnswers'
 import { getAnswers } from '#/lib/workbook'
 
-// Loads the answers here rather than in each page, so changes made on one
-// workbook page are still there on the next.
+// Loads the answers here rather than in each section's page, so changes made
+// in one section are still there in the next.
 export default async function WorkbookLayout({
   children,
 }: {
@@ -14,12 +15,8 @@ export default async function WorkbookLayout({
   const { userId, answers, error } = await getAnswers()
 
   return (
-    <WorkbookAnswersProvider
-      userId={userId}
-      savedAnswers={answers}
-      loadError={Boolean(error)}
-    >
-      {children}
+    <WorkbookAnswersProvider userId={userId} savedAnswers={answers}>
+      <WorkbookShell loadError={Boolean(error)}>{children}</WorkbookShell>
     </WorkbookAnswersProvider>
   )
 }

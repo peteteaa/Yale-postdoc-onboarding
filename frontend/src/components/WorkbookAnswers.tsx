@@ -142,12 +142,7 @@ async function save(sectionId: string) {
   if (queue.size === 0) setStatus(sectionId, 'saved')
 }
 
-type Saved = {
-  userId: string | null
-  answers: WorkbookAnswers
-  /** Set when the saved answers couldn't be loaded. */
-  loadError: boolean
-}
+type Saved = { userId: string | null; answers: WorkbookAnswers }
 
 const SavedContext = createContext<Saved | null>(null)
 
@@ -164,12 +159,10 @@ function useSaved() {
 export function WorkbookAnswersProvider({
   userId,
   savedAnswers,
-  loadError,
   children,
 }: {
   userId: string | null
   savedAnswers: WorkbookAnswers
-  loadError: boolean
   children: ReactNode
 }) {
   useEffect(() => {
@@ -188,35 +181,46 @@ export function WorkbookAnswersProvider({
   )
 
   const saved = useMemo(
-    () => ({ userId, answers: savedAnswers, loadError }),
-    [userId, savedAnswers, loadError],
+    () => ({ userId, answers: savedAnswers }),
+    [userId, savedAnswers],
   )
   return <SavedContext value={saved}>{children}</SavedContext>
 }
 
-/** Set when the saved answers couldn't be loaded. */
-export function useLoadError() {
-  return useSaved().loadError
-}
-
-/** One section's answers, with any changes, and how saving them is going. */
-export function useSectionAnswers(sectionId: string) {
-  const saved = useSaved()
-  const { userId } = saved
+/** The changes made in this tab, if they're the signed-in person's. */
+function useChanges(userId: string | null) {
   const current = useSyncExternalStore(
     subscribe,
     () => changes,
     () => NO_CHANGES,
   )
   // Until they're forgotten, someone else's changes are just ignored.
-  const mine = current.userId === userId
-  const changed = mine ? current.answers[sectionId] : undefined
+  return current.userId === userId ? current : NO_CHANGES
+}
+
+/** The ids of sections whose changes didn't save. */
+export function useFailedSaves() {
+  const { status } = useChanges(useSaved().userId)
+  return Object.keys(status).filter((id) => status[id] === 'error')
+}
+
+/** Tries saving a section's changes again. */
+export function retrySave(sectionId: string) {
+  void save(sectionId)
+}
+
+/** One section's answers, with any changes, and how saving them is going. */
+export function useSectionAnswers(sectionId: string) {
+  const saved = useSaved()
+  const { userId } = saved
+  const current = useChanges(userId)
+  const changed = current.answers[sectionId]
   const savedAnswers = saved.answers[sectionId]
   const answers: SectionAnswers = useMemo(
     () => ({ ...savedAnswers, ...changed }),
     [savedAnswers, changed],
   )
-  const status = (mine && current.status[sectionId]) || 'idle'
+  const status = current.status[sectionId] ?? 'idle'
 
   const onAnswer = useCallback(
     (promptId: string, update: AnswerUpdate) => {
@@ -239,7 +243,5 @@ export function useSectionAnswers(sectionId: string) {
     [userId, sectionId, savedAnswers],
   )
 
-  const saveNow = useCallback(() => void save(sectionId), [sectionId])
-
-  return { answers, status, onAnswer, saveNow }
+  return { answers, status, onAnswer }
 }

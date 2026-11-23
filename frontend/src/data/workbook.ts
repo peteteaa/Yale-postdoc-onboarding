@@ -1542,3 +1542,20 @@ export const MODULES: WorkbookModule[] = [
     ],
   },
 ]
+
+/** Every section in order, with its module. */
+export const SECTIONS = MODULES.flatMap((module) =>
+  module.sections.map((section) => ({ module, section })),
+)
+
+/** A section's page, e.g. /workbook/benefits-policies/wellness. */
+export function sectionHref(moduleId: string, sectionId: string) {
+  return `/workbook/${moduleId}/${sectionId}`
+}
+
+/** The section with this page, if there is one. */
+export function findSection(moduleId: string, sectionId: string) {
+  return SECTIONS.find(
+    ({ module, section }) => module.id === moduleId && section.id === sectionId,
+  )
+}

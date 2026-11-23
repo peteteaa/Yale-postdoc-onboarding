@@ -1,7 +1,12 @@
 'use client'
 
+import { PRIMARY_BUTTON } from '#/components/Form'
 import type { AnswerUpdate, SaveStatus } from '#/components/WorkbookAnswers'
-import { useLoadError, useSectionAnswers } from '#/components/WorkbookAnswers'
+import {
+  retrySave,
+  useFailedSaves,
+  useSectionAnswers,
+} from '#/components/WorkbookAnswers'
 import type { Resource } from '#/data/resources'
 import type {
   ChoicePrompt,
@@ -13,7 +18,6 @@ import type {
   SectionAnswers,
   TablePrompt,
   TextPrompt,
-  WorkbookModule,
   WorkbookSection,
 } from '#/data/workbook'
 import {
@@ -21,11 +25,13 @@ import {
   MAX_OWN_OPTION_LENGTH,
   MAX_PICKS,
   MAX_TEXT_LENGTH,
-  MODULES,
+  SECTIONS,
+  sectionHref,
   sectionPrompts,
 } from '#/data/workbook'
+import Link from 'next/link'
 import type { FormEvent, ReactNode } from 'react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Same look as the admin forms' fields and ghost button.
 const INPUT =
@@ -33,14 +39,18 @@ const INPUT =
 const GHOST_BUTTON =
   'inline-flex min-h-11 cursor-pointer items-center justify-center rounded border-[1.5px] border-yale-blue bg-paper px-4.5 py-2.5 leading-tight font-semibold text-yale-blue hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-paper'
 
-export function Workbook({
-  resources,
-}: {
-  /** The Resources page's links, or null if they couldn't be loaded. */
-  resources: Resource[] | null
-}) {
-  const loadError = useLoadError()
+/** The section to focus when its page opens, after clicking Previous or Next. */
+let focusOnArrival: string | null = null
 
+/** The workbook's heading and privacy note, around each section's page. */
+export function WorkbookShell({
+  loadError,
+  children,
+}: {
+  /** Set when the saved answers couldn't be loaded. */
+  loadError: boolean
+  children: ReactNode
+}) {
   return (
     <main className="mx-auto max-w-page px-4 pt-6 pb-12 md:px-10 md:pt-10 md:pb-18">
       <div className="mb-7 max-w-195">
@@ -57,36 +67,33 @@ export function Workbook({
           Your answers couldn’t be loaded right now. Try again in a few minutes.
         </p>
       ) : (
-        // TODO: a way to move between workbook sections, once there are more of them
-        <div className="grid gap-12">
-          {MODULES.map((module) => (
-            <ModuleBlock
-              key={module.id}
-              module={module}
-              resources={resources}
-            />
-          ))}
-        </div>
+        // TODO: list the modules and their sections, to move around the workbook
+        children
       )}
     </main>
   )
 }
 
-function ModuleBlock({
-  module,
+/** One section's page: its module's heading, then the section. */
+export function WorkbookSection({
+  moduleId,
+  sectionId,
   resources,
 }: {
-  module: WorkbookModule
+  moduleId: string
+  sectionId: string
+  /** The Resources page's links, or null if they couldn't be loaded. */
   resources: Resource[] | null
 }) {
-  const headingId = `module-${module.id}`
+  const index = SECTIONS.findIndex(
+    ({ module, section }) => module.id === moduleId && section.id === sectionId,
+  )
+  const { module, section } = SECTIONS[index]
 
   return (
-    <section aria-labelledby={headingId}>
-      <h2
-        id={headingId}
-        className={`text-h2 ${module.description ? 'mb-1' : 'mb-4'}`}
-      >
+    <>
+      <OtherFailedSaves sectionId={section.id} />
+      <h2 className={`text-h2 ${module.description ? 'mb-1' : 'mb-4'}`}>
         {module.title}
       </h2>
       {module.description && (
@@ -94,28 +101,106 @@ function ModuleBlock({
           {module.description}
         </p>
       )}
-      <div className="grid gap-5">
-        {module.sections.map((section) => (
-          <SectionCard
-            key={section.id}
-            section={section}
-            resources={resources}
-          />
-        ))}
-      </div>
-    </section>
+      <SectionCard
+        section={section}
+        resources={resources}
+        footer={<SectionPager index={index} />}
+      />
+    </>
+  )
+}
+
+/**
+ * Other sections whose changes didn't save, e.g. after moving on before a
+ * save went through. Shown here because their own Try again isn't on screen.
+ */
+function OtherFailedSaves({ sectionId }: { sectionId: string }) {
+  const failedIds = useFailedSaves()
+  const failed = SECTIONS.filter(
+    ({ section }) => section.id !== sectionId && failedIds.includes(section.id),
+  )
+  if (failed.length === 0) return null
+
+  return (
+    <div role="alert" className="mb-8 grid gap-3 rounded bg-wash px-4 py-3">
+      {failed.map(({ module, section }) => (
+        <div
+          key={section.id}
+          className="flex flex-wrap items-center gap-x-4 gap-y-2"
+        >
+          <p className="font-semibold text-late">
+            Your changes to{' '}
+            <Link href={sectionHref(module.id, section.id)}>
+              {section.title}
+            </Link>{' '}
+            didn’t save.
+          </p>
+          <button
+            type="button"
+            onClick={() => retrySave(section.id)}
+            className={GHOST_BUTTON}
+          >
+            Try again
+            <span className="sr-only"> to save {section.title}</span>
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Links to the sections before and after this one, across modules. */
+function SectionPager({ index }: { index: number }) {
+  const prev = SECTIONS[index - 1]
+  const next = SECTIONS[index + 1]
+
+  return (
+    <nav
+      aria-label="Previous and next sections"
+      className="mt-5 flex flex-wrap justify-between gap-3 border-t border-card-line pt-5"
+    >
+      {prev && (
+        <Link
+          href={sectionHref(prev.module.id, prev.section.id)}
+          onClick={() => (focusOnArrival = prev.section.id)}
+          className={`${GHOST_BUTTON} no-underline max-sm:w-full`}
+        >
+          Previous<span className="sr-only">: {prev.section.title}</span>
+        </Link>
+      )}
+      {next && (
+        <Link
+          href={sectionHref(next.module.id, next.section.id)}
+          onClick={() => (focusOnArrival = next.section.id)}
+          className={`${PRIMARY_BUTTON} ml-auto text-center text-balance no-underline max-sm:w-full`}
+        >
+          Next: {next.section.title}
+        </Link>
+      )}
+    </nav>
   )
 }
 
 function SectionCard({
   section,
   resources,
+  footer,
 }: {
   section: WorkbookSection
   resources: Resource[] | null
+  footer: ReactNode
 }) {
   const headingId = `section-${section.id}`
-  const { answers, status, onAnswer, saveNow } = useSectionAnswers(section.id)
+  const { answers, status, onAnswer } = useSectionAnswers(section.id)
+
+  // After Previous or Next, start from this section's heading, as if it were
+  // a new page. The page has already scrolled to the top.
+  const heading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    if (focusOnArrival !== section.id) return
+    focusOnArrival = null
+    heading.current?.focus()
+  }, [section.id])
 
   const resourceBox = section.resources && (
     <ResourceBox
@@ -138,7 +223,7 @@ function SectionCard({
           {section.when}
         </p>
       )}
-      <h3 id={headingId} className="mb-2 text-h3">
+      <h3 id={headingId} ref={heading} tabIndex={-1} className="mb-2 text-h3">
         {section.title}
       </h3>
       {section.description && (
@@ -202,9 +287,9 @@ function SectionCard({
         </p>
       )}
       {sectionPrompts(section).length > 0 && (
-        <SaveMessage status={status} onRetry={saveNow} />
+        <SaveMessage status={status} onRetry={() => retrySave(section.id)} />
       )}
-      {/* TODO: Previous/Next section buttons */}
+      {footer}
     </section>
   )
 }

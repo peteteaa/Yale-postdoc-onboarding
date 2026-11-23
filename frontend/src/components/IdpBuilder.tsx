@@ -2,7 +2,7 @@
 
 import { saveIdpAnswers } from '#/app/idp/actions'
 import { SaveMessage, useAutosave } from '#/components/Autosave'
-import { BUSY, INPUT, PRIMARY_BUTTON } from '#/components/Form'
+import { BUSY, GHOST_BUTTON, INPUT, PRIMARY_BUTTON } from '#/components/Form'
 import type {
   IdpAnswers,
   IdpMapField,
@@ -19,7 +19,10 @@ import {
 } from '#/data/idp'
 import { formatDate, parseDate, todayInNewHaven } from '#/lib/dates'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+/** A built PDF waiting in the preview dialog. */
+type Preview = { url: string; fileName: string }
 
 const CARD = 'rounded border border-card-line bg-paper p-4.5 shadow-card md:p-6'
 const TEXTAREA = `${INPUT} block min-h-21 resize-y`
@@ -49,6 +52,7 @@ export function IdpBuilder({
   }))
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState(false)
+  const [preview, setPreview] = useState<Preview | null>(null)
   // One save per card, so each card says whether its own changes saved, like
   // the workbook's sections.
   const detailsSave = useAutosave(saveIdpAnswers)
@@ -67,16 +71,21 @@ export function IdpBuilder({
     save.queueSave(idpFieldId(map, id), value)
   }
 
-  const download = async () => {
+  const openPreview = async () => {
     setExporting(true)
     setExportError(false)
     try {
       // Loaded on demand: the PDF library is too big to send with the page.
-      const { downloadIdpPdf } = await import('#/components/IdpPdf')
-      await downloadIdpPdf(
+      const { buildIdpPdf, idpPdfFileName } =
+        await import('#/components/IdpPdf')
+      const blob = await buildIdpPdf(
         answers,
         formatDate(parseDate(todayInNewHaven()), true),
       )
+      setPreview({
+        url: URL.createObjectURL(blob),
+        fileName: idpPdfFileName(answers),
+      })
     } catch (error) {
       console.error('Building the IDP PDF failed:', error)
       setExportError(true)
@@ -85,11 +94,16 @@ export function IdpBuilder({
     }
   }
 
+  const closePreview = () => {
+    if (preview) URL.revokeObjectURL(preview.url)
+    setPreview(null)
+  }
+
   const downloadButton = (
     <div className="grid justify-items-start gap-2">
       <button
         type="button"
-        onClick={download}
+        onClick={openPreview}
         disabled={exporting}
         className={`${PRIMARY_BUTTON} ${BUSY}`}
       >
@@ -253,7 +267,74 @@ export function IdpBuilder({
           </Card>
         </div>
       )}
+
+      {preview && <PdfPreview preview={preview} onClose={closePreview} />}
     </main>
+  )
+}
+
+/**
+ * The built PDF in a modal, shown in the browser's own PDF viewer so you can
+ * scroll through every page before saving it.
+ */
+function PdfPreview({
+  preview,
+  onClose,
+}: {
+  preview: Preview
+  onClose: () => void
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    if (!dialog.open) dialog.showModal()
+    // Keep the form behind the dialog from scrolling.
+    const { overflow } = document.documentElement.style
+    document.documentElement.style.overflow = 'hidden'
+    // No dialog.close() here: it fires onClose, and the dialog goes away with
+    // this component anyway.
+    return () => {
+      document.documentElement.style.overflow = overflow
+    }
+  }, [])
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="idp-preview-title"
+      // Esc closes the dialog; keep React's state in step with it.
+      onClose={onClose}
+      // A click on the backdrop lands on the dialog itself.
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      className="m-auto h-[calc(100dvh-2rem)] max-h-none w-[calc(100vw-2rem)] max-w-240 rounded bg-paper p-0 text-ink shadow-doc backdrop:bg-[rgb(0_0_0/0.5)]"
+    >
+      <div className="flex h-full flex-col">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 md:px-5">
+          <h2 id="idp-preview-title" className="text-h4">
+            Preview your IDP
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={onClose} className={GHOST_BUTTON}>
+              Keep editing
+            </button>
+            <a
+              href={preview.url}
+              download={preview.fileName}
+              className={PRIMARY_BUTTON}
+            >
+              Download PDF
+            </a>
+          </div>
+        </div>
+        <iframe
+          title="IDP PDF preview"
+          src={`${preview.url}#navpanes=0&view=FitH`}
+          className="min-h-0 w-full flex-1 bg-wash"
+        />
+      </div>
+    </dialog>
   )
 }
 

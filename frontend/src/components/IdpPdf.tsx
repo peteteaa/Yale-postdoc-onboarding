@@ -378,18 +378,13 @@ export function IdpDocument({
 }
 
 /** Builds the PDF and has the browser download it. */
-export async function downloadIdpPdf(answers: IdpAnswers, exportedOn: string) {
-  const blob = await pdf(
-    <IdpDocument answers={answers} exportedOn={exportedOn} />,
-  ).toBlob()
+/** Builds the IDP PDF as a file the page can preview or save. */
+export async function buildIdpPdf(answers: IdpAnswers, exportedOn: string) {
+  return pdf(<IdpDocument answers={answers} exportedOn={exportedOn} />).toBlob()
+}
+
+/** The file name to save the IDP under. */
+export function idpPdfFileName(answers: IdpAnswers) {
   const name = answers.postdocName.trim()
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `Initial IDP${name ? ` - ${name}` : ''}.pdf`
-  document.body.append(link)
-  link.click()
-  link.remove()
-  // Give the download a moment to start before freeing the file.
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  return `Initial IDP${name ? ` - ${name}` : ''}.pdf`
 }

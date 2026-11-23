@@ -235,3 +235,52 @@ export const EMPTY_IDP: IdpAnswers = {
   alignment: {},
   summaryNotes: '',
 }
+
+/** The longest answer a single IDP field can hold. */
+export const MAX_IDP_ANSWER_LENGTH = 10_000
+
+/** The IdpAnswers fields that hold one string each. */
+export const IDP_TEXT_FIELDS = [
+  'postdocName',
+  'mentorName',
+  'department',
+  'summaryNotes',
+] as const
+export type IdpTextField = (typeof IDP_TEXT_FIELDS)[number]
+
+/** The IdpAnswers fields that hold a string per question id. */
+export type IdpMapField = 'responses' | 'mentorInput' | 'alignment'
+
+/** The id each field is saved under, e.g. "mentorName" or "responses.goals". */
+export const idpFieldId = (field: IdpTextField | IdpMapField, key?: string) =>
+  key ? `${field}.${key}` : field
+
+/** Every field id that can be saved. */
+export function idpFieldIds(): string[] {
+  return [
+    ...IDP_TEXT_FIELDS,
+    ...IDP_QUESTIONS.map((q) => idpFieldId('responses', q.id)),
+    ...IDP_QUESTIONS.filter((q) => q.mentorInput).map((q) =>
+      idpFieldId('mentorInput', q.id),
+    ),
+    ...IDP_ALIGNMENT.map((row) => idpFieldId('alignment', row.id)),
+  ]
+}
+
+/** Saved answers, by field id, as IdpAnswers. Unknown ids are ignored. */
+export function idpFromFields(fields: Record<string, string>): IdpAnswers {
+  const answers: IdpAnswers = {
+    ...EMPTY_IDP,
+    responses: {},
+    mentorInput: {},
+    alignment: {},
+  }
+  const known = new Set(idpFieldIds())
+  for (const [id, value] of Object.entries(fields)) {
+    if (!known.has(id)) continue
+    const [field, key] = id.split('.') as [IdpTextField | IdpMapField, string?]
+    if (key) answers[field as IdpMapField][key] = value
+    else answers[field as IdpTextField] = value
+  }
+  return answers
+}

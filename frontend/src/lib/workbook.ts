@@ -5,17 +5,18 @@ import { createClient } from '#/lib/supabase/server'
 type AnswerRow = { section_id: string; prompt_id: string; answer: Answer }
 
 /**
- * The signed-in person's saved answers. `error` is set when they can't be
- * read (for example, before the migration has been run).
+ * The signed-in person's id and saved answers. `error` is set when they can't
+ * be read (for example, before the migration has been run).
  */
 export async function getAnswers(): Promise<{
+  userId: string | null
   answers: WorkbookAnswers
   error: string | null
 }> {
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getClaims()
   const userId = auth?.claims?.sub
-  if (!userId) return { answers: {}, error: 'Not signed in' }
+  if (!userId) return { userId: null, answers: {}, error: 'Not signed in' }
 
   // Row-level security already limits this to their own answers. Filtering by
   // user too keeps it that way if staff are ever allowed to read answers.
@@ -27,7 +28,7 @@ export async function getAnswers(): Promise<{
 
   if (error) {
     console.error('Loading workbook answers failed:', error)
-    return { answers: {}, error: error.message }
+    return { userId, answers: {}, error: error.message }
   }
   const answers: WorkbookAnswers = {}
   for (const row of data) {
@@ -36,5 +37,5 @@ export async function getAnswers(): Promise<{
       [row.prompt_id]: row.answer,
     }
   }
-  return { answers, error: null }
+  return { userId, answers, error: null }
 }

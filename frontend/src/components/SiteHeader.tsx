@@ -43,7 +43,14 @@ function initialsOf(name: string) {
 export function SiteHeader({ user }: { user: CurrentUser | null }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const pathname = usePathname()
-  const current = TABS.find((tab) => tab.to === pathname)
+  // A tab is also current on the pages under it, e.g. a workbook section.
+  const current = TABS.find(
+    (tab) =>
+      tab.to === pathname ||
+      (tab.to !== undefined &&
+        tab.to !== '/' &&
+        pathname.startsWith(`${tab.to}/`)),
+  )
   // Staff pages have their own tabs instead
   const isAdmin = pathname === '/admin' || pathname.startsWith('/admin/')
 
@@ -111,7 +118,7 @@ export function SiteHeader({ user }: { user: CurrentUser | null }) {
                   {tab.to ? (
                     <Link
                       href={tab.to}
-                      aria-current={tab.to === pathname ? 'page' : undefined}
+                      aria-current={tab === current ? 'page' : undefined}
                       onClick={() => setMenuOpen(false)}
                       className={TAB_LINK}
                     >

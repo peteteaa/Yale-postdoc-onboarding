@@ -1,22 +1,12 @@
-import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-import { Workbook } from '#/components/Workbook'
-import { getResources } from '#/lib/resources'
+import { firstUnfinished, SECTIONS, sectionHref } from '#/data/workbook'
 import { getAnswers } from '#/lib/workbook'
 
-export const metadata: Metadata = {
-  title: 'Workbook | Yale University',
-}
-
+// Each section has its own page. This one picks up where they left off.
 export default async function WorkbookPage() {
-  // proxy.ts has already sent signed-out visitors to /login
-  const [answers, resources] = await Promise.all([getAnswers(), getResources()])
-
-  return (
-    <Workbook
-      savedAnswers={answers.answers}
-      loadError={Boolean(answers.error)}
-      resources={resources.error ? null : resources.resources}
-    />
-  )
+  // If the answers can't be loaded, the first section shows that error.
+  const { answers } = await getAnswers()
+  const { module, section } = firstUnfinished(SECTIONS, answers)
+  redirect(sectionHref(module.id, section.id))
 }

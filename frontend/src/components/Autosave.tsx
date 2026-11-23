@@ -4,7 +4,7 @@ import { GHOST_BUTTON } from '#/components/Form'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** How long to wait after the last change before saving. */
-const SAVE_DELAY_MS = 1000
+export const SAVE_DELAY_MS = 1000
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 

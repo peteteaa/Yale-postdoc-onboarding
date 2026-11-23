@@ -1,6 +1,7 @@
 'use client'
 
 import { saveAnswers } from '#/app/workbook/actions'
+import { SaveMessage, useAutosave } from '#/components/Autosave'
 import type { Resource } from '#/data/resources'
 import type {
   Answer,
@@ -26,15 +27,10 @@ import {
   sectionPrompts,
 } from '#/data/workbook'
 import type { FormEvent, ReactNode } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 /** A new answer, or a function that builds it from the latest one. */
 type AnswerUpdate = Answer | ((prev: Answer | undefined) => Answer)
-
-/** How long to wait after the last change before saving. */
-const SAVE_DELAY_MS = 1000
-
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
 // Same look as the admin forms' fields and ghost button.
 const INPUT =
@@ -137,7 +133,11 @@ function SectionCard({
   // The latest answers, for building the next one in event handlers. Quick
   // clicks can come before a re-render, when `answers` is still the old one.
   const latest = useRef(savedAnswers)
-  const { status, queueSave, saveNow } = useAutosave(section.id)
+  const save = useCallback(
+    (changed: Record<string, Answer>) => saveAnswers(section.id, changed),
+    [section.id],
+  )
+  const { status, queueSave, saveNow } = useAutosave(save)
 
   const onAnswer = (promptId: string, update: AnswerUpdate) => {
     const answer =
@@ -415,95 +415,6 @@ function PromptList({
           )
       }
     })
-}
-
-/**
- * Saves a section's answers a moment after the last change. Answers that
- * don't save are kept and sent again with the next save.
- */
-function useAutosave(sectionId: string) {
-  const [status, setStatus] = useState<SaveStatus>('idle')
-  // Answers that haven't been saved yet, by prompt id.
-  const unsaved = useRef(new Map<string, Answer>())
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
-
-  const saveNow = useCallback(async () => {
-    clearTimeout(timer.current)
-    if (unsaved.current.size === 0) return
-    const sending = new Map(unsaved.current)
-    setStatus('saving')
-
-    let ok = false
-    try {
-      ok = (await saveAnswers(sectionId, Object.fromEntries(sending))).ok
-    } catch (error) {
-      // e.g. offline
-      console.error('Saving workbook answers failed:', error)
-    }
-    if (!ok) {
-      setStatus('error')
-      return
-    }
-    // Forget what was saved, unless it changed again while saving.
-    for (const [promptId, answer] of sending) {
-      if (unsaved.current.get(promptId) === answer) {
-        unsaved.current.delete(promptId)
-      }
-    }
-    if (unsaved.current.size === 0) setStatus('saved')
-  }, [sectionId])
-
-  const queueSave = useCallback(
-    (promptId: string, answer: Answer) => {
-      unsaved.current.set(promptId, answer)
-      setStatus('saving')
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => void saveNow(), SAVE_DELAY_MS)
-    },
-    [saveNow],
-  )
-
-  // Save right away when leaving the page for another one in the app.
-  useEffect(() => () => void saveNow(), [saveNow])
-
-  // Ask before closing the tab or reloading while answers aren't saved.
-  useEffect(() => {
-    if (status !== 'saving' && status !== 'error') return
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [status])
-
-  return { status, queueSave, saveNow }
-}
-
-function SaveMessage({
-  status,
-  onRetry,
-}: {
-  status: SaveStatus
-  onRetry: () => void
-}) {
-  if (status === 'error') {
-    return (
-      <div
-        role="alert"
-        className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2"
-      >
-        <p className="font-semibold text-late">Your changes didn’t save.</p>
-        <button type="button" onClick={onRetry} className={GHOST_BUTTON}>
-          Try again
-        </button>
-      </div>
-    )
-  }
-  // Takes up its line even when empty, so cards below don't jump when it appears.
-  return (
-    <p className="mt-5 min-h-[1lh] text-small text-ink-2">
-      {status === 'saving' && 'Saving…'}
-      {status === 'saved' && 'Saved'}
-    </p>
-  )
 }
 
 function PrivacyNote() {

@@ -1,0 +1,245 @@
+'use client'
+
+import { saveAnswers } from '#/app/workbook/actions'
+import type { Answer, SectionAnswers, WorkbookAnswers } from '#/data/workbook'
+import type { ReactNode } from 'react'
+import {
+  createContext,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+} from 'react'
+
+/** A new answer, or a function that builds it from the latest one. */
+export type AnswerUpdate = Answer | ((prev: Answer | undefined) => Answer)
+
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
+/** How long to wait after the last change before saving. */
+const SAVE_DELAY_MS = 1000
+
+/*
+ * Answers changed in this tab, and their saving, live here in the module
+ * rather than in a component, so they outlast the workbook's components:
+ * - A save that is waiting or sending still finishes after you leave the page.
+ * - Coming back shows your latest answers, even when Next.js shows an older
+ *   copy of the page, as it does after the Back button.
+ * Only event handlers and effects write to them, so they stay empty on the
+ * server, where they'd be shared between visitors.
+ */
+
+type Changes = {
+  /** Whose changes these are. They're dropped when someone else signs in. */
+  userId: string | null
+  /** Answers changed in this tab, by section and prompt id. */
+  answers: WorkbookAnswers
+  /** The save status of each section with changes. */
+  status: Record<string, SaveStatus | undefined>
+}
+
+const NO_CHANGES: Changes = { userId: null, answers: {}, status: {} }
+let changes = NO_CHANGES
+const listeners = new Set<() => void>()
+
+// Changes that haven't been saved yet, by section and prompt id, and each
+// section's timer for its next save.
+let unsaved = new Map<string, Map<string, Answer>>()
+const timers = new Map<string, ReturnType<typeof setTimeout>>()
+
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+function update(next: Partial<Changes>) {
+  changes = { ...changes, ...next }
+  // Ask before closing the tab or reloading while changes aren't saved. This
+  // stays on after leaving the workbook, until they save.
+  if (
+    Object.values(changes.status).some((s) => s === 'saving' || s === 'error')
+  ) {
+    window.addEventListener('beforeunload', warnBeforeUnload)
+  } else {
+    window.removeEventListener('beforeunload', warnBeforeUnload)
+  }
+  for (const listener of listeners) listener()
+}
+
+function warnBeforeUnload(event: BeforeUnloadEvent) {
+  event.preventDefault()
+}
+
+/** Forgets the last person's changes, so the next person never sees or saves them. */
+function switchUser(userId: string) {
+  for (const timer of timers.values()) clearTimeout(timer)
+  timers.clear()
+  unsaved = new Map()
+  update({ userId, answers: {}, status: {} })
+}
+
+function change(
+  userId: string,
+  sectionId: string,
+  promptId: string,
+  answer: Answer,
+) {
+  if (changes.userId !== userId) switchUser(userId)
+  let queue = unsaved.get(sectionId)
+  if (!queue) unsaved.set(sectionId, (queue = new Map()))
+  queue.set(promptId, answer)
+  clearTimeout(timers.get(sectionId))
+  timers.set(
+    sectionId,
+    setTimeout(() => void save(sectionId), SAVE_DELAY_MS),
+  )
+  update({
+    answers: {
+      ...changes.answers,
+      [sectionId]: { ...changes.answers[sectionId], [promptId]: answer },
+    },
+    status: { ...changes.status, [sectionId]: 'saving' },
+  })
+}
+
+function setStatus(sectionId: string, status: SaveStatus) {
+  update({ status: { ...changes.status, [sectionId]: status } })
+}
+
+/**
+ * Saves a section's changes now. Changes that don't save are kept and sent
+ * again with the next save.
+ */
+async function save(sectionId: string) {
+  clearTimeout(timers.get(sectionId))
+  timers.delete(sectionId)
+  const queue = unsaved.get(sectionId)
+  if (!queue?.size) return
+  const { userId } = changes
+  const sending = new Map(queue)
+  setStatus(sectionId, 'saving')
+
+  let ok = false
+  try {
+    ok = (await saveAnswers(sectionId, Object.fromEntries(sending))).ok
+  } catch (error) {
+    // e.g. offline
+    console.error('Saving workbook answers failed:', error)
+  }
+  // Someone else signed in while it was sending.
+  if (changes.userId !== userId) return
+  if (!ok) {
+    setStatus(sectionId, 'error')
+    return
+  }
+  // Forget what was saved, unless it changed again while saving.
+  for (const [promptId, answer] of sending) {
+    if (queue.get(promptId) === answer) queue.delete(promptId)
+  }
+  if (queue.size === 0) setStatus(sectionId, 'saved')
+}
+
+type Saved = {
+  userId: string | null
+  answers: WorkbookAnswers
+  /** Set when the saved answers couldn't be loaded. */
+  loadError: boolean
+}
+
+const SavedContext = createContext<Saved | null>(null)
+
+function useSaved() {
+  const saved = use(SavedContext)
+  if (!saved) throw new Error('Needs a WorkbookAnswersProvider around it')
+  return saved
+}
+
+/**
+ * Gives the workbook the signed-in person's saved answers. Used by the
+ * workbook layout, so it stays while moving around the workbook.
+ */
+export function WorkbookAnswersProvider({
+  userId,
+  savedAnswers,
+  loadError,
+  children,
+}: {
+  userId: string | null
+  savedAnswers: WorkbookAnswers
+  loadError: boolean
+  children: ReactNode
+}) {
+  useEffect(() => {
+    // Someone else made changes in this tab, then signed out.
+    if (userId && changes.userId && changes.userId !== userId) {
+      switchUser(userId)
+    }
+  }, [userId])
+
+  // Save right away when leaving the workbook for another page in the app.
+  useEffect(
+    () => () => {
+      for (const sectionId of unsaved.keys()) void save(sectionId)
+    },
+    [],
+  )
+
+  const saved = useMemo(
+    () => ({ userId, answers: savedAnswers, loadError }),
+    [userId, savedAnswers, loadError],
+  )
+  return <SavedContext value={saved}>{children}</SavedContext>
+}
+
+/** Set when the saved answers couldn't be loaded. */
+export function useLoadError() {
+  return useSaved().loadError
+}
+
+/** One section's answers, with any changes, and how saving them is going. */
+export function useSectionAnswers(sectionId: string) {
+  const saved = useSaved()
+  const { userId } = saved
+  const current = useSyncExternalStore(
+    subscribe,
+    () => changes,
+    () => NO_CHANGES,
+  )
+  // Until they're forgotten, someone else's changes are just ignored.
+  const mine = current.userId === userId
+  const changed = mine ? current.answers[sectionId] : undefined
+  const savedAnswers = saved.answers[sectionId]
+  const answers: SectionAnswers = useMemo(
+    () => ({ ...savedAnswers, ...changed }),
+    [savedAnswers, changed],
+  )
+  const status = (mine && current.status[sectionId]) || 'idle'
+
+  const onAnswer = useCallback(
+    (promptId: string, update: AnswerUpdate) => {
+      if (!userId) return
+      // Read the latest answer here, not from `answers`: quick clicks can
+      // come before a re-render.
+      const latest =
+        changes.userId === userId ? changes.answers[sectionId] : undefined
+      const prev =
+        latest && Object.hasOwn(latest, promptId)
+          ? latest[promptId]
+          : savedAnswers?.[promptId]
+      change(
+        userId,
+        sectionId,
+        promptId,
+        typeof update === 'function' ? update(prev) : update,
+      )
+    },
+    [userId, sectionId, savedAnswers],
+  )
+
+  const saveNow = useCallback(() => void save(sectionId), [sectionId])
+
+  return { answers, status, onAnswer, saveNow }
+}

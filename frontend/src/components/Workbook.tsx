@@ -1,9 +1,9 @@
 'use client'
 
-import { saveAnswers } from '#/app/workbook/actions'
+import type { AnswerUpdate, SaveStatus } from '#/components/WorkbookAnswers'
+import { useLoadError, useSectionAnswers } from '#/components/WorkbookAnswers'
 import type { Resource } from '#/data/resources'
 import type {
-  Answer,
   ChoicePrompt,
   DatePrompt,
   InfoList,
@@ -13,7 +13,6 @@ import type {
   SectionAnswers,
   TablePrompt,
   TextPrompt,
-  WorkbookAnswers,
   WorkbookModule,
   WorkbookSection,
 } from '#/data/workbook'
@@ -26,15 +25,7 @@ import {
   sectionPrompts,
 } from '#/data/workbook'
 import type { FormEvent, ReactNode } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
-
-/** A new answer, or a function that builds it from the latest one. */
-type AnswerUpdate = Answer | ((prev: Answer | undefined) => Answer)
-
-/** How long to wait after the last change before saving. */
-const SAVE_DELAY_MS = 1000
-
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+import { useState } from 'react'
 
 // Same look as the admin forms' fields and ghost button.
 const INPUT =
@@ -43,16 +34,13 @@ const GHOST_BUTTON =
   'inline-flex min-h-11 cursor-pointer items-center justify-center rounded border-[1.5px] border-yale-blue bg-paper px-4.5 py-2.5 leading-tight font-semibold text-yale-blue hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-paper'
 
 export function Workbook({
-  savedAnswers,
-  loadError,
   resources,
 }: {
-  savedAnswers: WorkbookAnswers
-  /** Set when the saved answers couldn't be loaded. */
-  loadError: boolean
   /** The Resources page's links, or null if they couldn't be loaded. */
   resources: Resource[] | null
 }) {
+  const loadError = useLoadError()
+
   return (
     <main className="mx-auto max-w-page px-4 pt-6 pb-12 md:px-10 md:pt-10 md:pb-18">
       <div className="mb-7 max-w-195">
@@ -75,7 +63,6 @@ export function Workbook({
             <ModuleBlock
               key={module.id}
               module={module}
-              savedAnswers={savedAnswers}
               resources={resources}
             />
           ))}
@@ -87,11 +74,9 @@ export function Workbook({
 
 function ModuleBlock({
   module,
-  savedAnswers,
   resources,
 }: {
   module: WorkbookModule
-  savedAnswers: WorkbookAnswers
   resources: Resource[] | null
 }) {
   const headingId = `module-${module.id}`
@@ -114,7 +99,6 @@ function ModuleBlock({
           <SectionCard
             key={section.id}
             section={section}
-            savedAnswers={savedAnswers[section.id] ?? {}}
             resources={resources}
           />
         ))}
@@ -125,27 +109,13 @@ function ModuleBlock({
 
 function SectionCard({
   section,
-  savedAnswers,
   resources,
 }: {
   section: WorkbookSection
-  savedAnswers: SectionAnswers
   resources: Resource[] | null
 }) {
   const headingId = `section-${section.id}`
-  const [answers, setAnswers] = useState(savedAnswers)
-  // The latest answers, for building the next one in event handlers. Quick
-  // clicks can come before a re-render, when `answers` is still the old one.
-  const latest = useRef(savedAnswers)
-  const { status, queueSave, saveNow } = useAutosave(section.id)
-
-  const onAnswer = (promptId: string, update: AnswerUpdate) => {
-    const answer =
-      typeof update === 'function' ? update(latest.current[promptId]) : update
-    latest.current = { ...latest.current, [promptId]: answer }
-    setAnswers(latest.current)
-    queueSave(promptId, answer)
-  }
+  const { answers, status, onAnswer, saveNow } = useSectionAnswers(section.id)
 
   const resourceBox = section.resources && (
     <ResourceBox
@@ -415,66 +385,6 @@ function PromptList({
           )
       }
     })
-}
-
-/**
- * Saves a section's answers a moment after the last change. Answers that
- * don't save are kept and sent again with the next save.
- */
-function useAutosave(sectionId: string) {
-  const [status, setStatus] = useState<SaveStatus>('idle')
-  // Answers that haven't been saved yet, by prompt id.
-  const unsaved = useRef(new Map<string, Answer>())
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
-
-  const saveNow = useCallback(async () => {
-    clearTimeout(timer.current)
-    if (unsaved.current.size === 0) return
-    const sending = new Map(unsaved.current)
-    setStatus('saving')
-
-    let ok = false
-    try {
-      ok = (await saveAnswers(sectionId, Object.fromEntries(sending))).ok
-    } catch (error) {
-      // e.g. offline
-      console.error('Saving workbook answers failed:', error)
-    }
-    if (!ok) {
-      setStatus('error')
-      return
-    }
-    // Forget what was saved, unless it changed again while saving.
-    for (const [promptId, answer] of sending) {
-      if (unsaved.current.get(promptId) === answer) {
-        unsaved.current.delete(promptId)
-      }
-    }
-    if (unsaved.current.size === 0) setStatus('saved')
-  }, [sectionId])
-
-  const queueSave = useCallback(
-    (promptId: string, answer: Answer) => {
-      unsaved.current.set(promptId, answer)
-      setStatus('saving')
-      clearTimeout(timer.current)
-      timer.current = setTimeout(() => void saveNow(), SAVE_DELAY_MS)
-    },
-    [saveNow],
-  )
-
-  // Save right away when leaving the page for another one in the app.
-  useEffect(() => () => void saveNow(), [saveNow])
-
-  // Ask before closing the tab or reloading while answers aren't saved.
-  useEffect(() => {
-    if (status !== 'saving' && status !== 'error') return
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [status])
-
-  return { status, queueSave, saveNow }
 }
 
 function SaveMessage({

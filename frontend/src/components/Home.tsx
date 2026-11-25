@@ -1,26 +1,28 @@
 'use client'
 
-import { DueInfo } from '#/components/Checklist'
+import { DueInfo, SaveError, UnsavedNote } from '#/components/Checklist'
 import { GHOST_BUTTON, PRIMARY_BUTTON } from '#/components/Form'
 import { Pill } from '#/components/Pill'
 import { PlanTimeline } from '#/components/PlanTimeline'
-import type { Visa } from '#/data/checklist'
 import { TASKS } from '#/data/checklist'
 import type { PostdocEvent } from '#/data/events'
 import { appliesTo, nextTask, taskStatus } from '#/lib/checklist'
-import { daysBetween, formatDate, parseDate } from '#/lib/dates'
+import {
+  daysBetween,
+  formatDate,
+  formatTimeRange,
+  parseDate,
+} from '#/lib/dates'
 import { buildPlan } from '#/lib/plan'
+import type { MyChecklist } from '#/lib/supabase/progress'
+import { useChecklistProgress } from '#/lib/use-checklist-progress'
 import Link from 'next/link'
-import { useState } from 'react'
 
-// TODO: from the signed-in postdoc's profile
-const START_DATE = parseDate('2026-09-01')
+// TODO: OPA's orientation date for the postdoc's cohort
 const ORIENTATION_DATE = parseDate('2026-10-05')
-const VISA: Visa = 'j1'
 
 // TODO: from the backend. Nothing is set up yet, so these are empty.
 const COMING_UP: { date: Date; title: string }[] = []
-const UPCOMING_EVENTS: PostdocEvent[] = []
 const WORKBOOK_MODULES_DONE = 0
 
 const CARD_SHAPE = 'rounded bg-paper p-4.5 shadow-card md:p-6'
@@ -32,36 +34,47 @@ const MORE_LINK = 'mt-3 inline-block font-semibold'
 export function Home({
   name,
   today: todayIso,
+  checklist: { start: startIso, visa, done: initiallyDone, unsaved },
+  events,
+  isAdmin,
 }: {
   /** First name to greet, or "Guest". */
   name: string
   /** 'YYYY-MM-DD' */
   today: string
+  /** Their start date, visa and checked-off tasks. */
+  checklist: MyChecklist
+  /** The next few published events, soonest first. null if they didn't load. */
+  events: PostdocEvent[] | null
+  /** OPA staff, who get a link to manage events. */
+  isAdmin: boolean
 }) {
-  // Ids of the tasks marked done here. None are done until there's a backend.
-  // TODO: share saved progress with the Checklist page
-  const [done, setDone] = useState(() => new Set<string>())
+  const start = parseDate(startIso)
   const today = parseDate(todayIso)
+  const { done, mark, error } = useChecklistProgress(
+    initiallyDone,
+    unsaved === null,
+  )
 
-  const rows = TASKS.filter((task) => appliesTo(task, VISA)).map((task) => ({
+  const rows = TASKS.filter((task) => appliesTo(task, visa)).map((task) => ({
     task,
     status: taskStatus(task, {
-      start: START_DATE,
+      start,
       today,
       done: done.has(task.id),
     }),
   }))
   const doneCount = rows.filter((row) => row.status.kind === 'done').length
-  const next = nextTask(rows, START_DATE)
+  const next = nextTask(rows, start)
 
-  const day = daysBetween(START_DATE, today) + 1
+  const day = daysBetween(start, today) + 1
   const week = Math.floor((day - 1) / 7) + 1
 
   const plan = buildPlan({
-    start: START_DATE,
+    start,
     orientation: ORIENTATION_DATE,
     today,
-    visa: VISA,
+    visa,
     done,
   })
   const idpMeeting = plan
@@ -75,18 +88,20 @@ export function Home({
         <p className={LABEL}>
           {day >= 1
             ? `Week ${week} · Day ${day}`
-            : `Starts ${formatDate(START_DATE, true)}`}
+            : `Starts ${formatDate(start, true)}`}
         </p>
         <h1 className="mb-2.5 text-h1 text-yale-blue">Welcome, {name}</h1>
         <p className="max-w-[65ch] text-lede text-ink-2">
           {day >= 1
-            ? `You started on ${formatDate(START_DATE, true)}. Here’s what needs your attention.`
+            ? `You started on ${formatDate(start, true)}. Here’s what needs your attention.`
             : 'Here’s how to get ready for your first day.'}
         </p>
+        <UnsavedNote reason={unsaved} />
+        <SaveError message={error} />
       </div>
 
       <div className="mb-6">
-        <PlanTimeline points={plan} start={START_DATE} />
+        <PlanTimeline points={plan} start={start} />
       </div>
 
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
@@ -116,9 +131,7 @@ export function Home({
               <div className="mt-4 flex flex-wrap items-center gap-x-3.5 gap-y-2.5">
                 <button
                   type="button"
-                  onClick={() =>
-                    setDone((prev) => new Set(prev).add(next.task.id))
-                  }
+                  onClick={() => mark(next.task.id, true)}
                   className={PRIMARY_BUTTON}
                 >
                   Mark as done
@@ -197,22 +210,33 @@ export function Home({
             <h2 id="events-h" className="mb-2 text-h3">
               Upcoming events
             </h2>
-            {UPCOMING_EVENTS.length > 0 ? (
+            {events === null ? (
+              <p className="text-small text-late">
+                Couldn’t load events. Reload the page to try again.
+              </p>
+            ) : events.length > 0 ? (
               <DateList
-                items={UPCOMING_EVENTS.map((event) => ({
+                items={events.map((event) => ({
                   key: event.id,
                   date: parseDate(event.date),
                   title: event.title,
-                  detail: event.host,
+                  detail: `${formatTimeRange(event.start, event.end)} · ${event.host}`,
                 }))}
               />
             ) : (
               <p className="text-small text-ink-2">No upcoming events.</p>
             )}
-            {/* TODO: link to Events & programs once it's built */}
-            <a href="#" className={MORE_LINK}>
-              All events
-            </a>
+            <div className="flex flex-wrap gap-x-5">
+              {/* TODO: link to Events & programs once it's built */}
+              <a href="#" className={MORE_LINK}>
+                All events
+              </a>
+              {isAdmin && (
+                <Link href="/admin/events" className={MORE_LINK}>
+                  Manage events
+                </Link>
+              )}
+            </div>
           </section>
         </aside>
       </div>

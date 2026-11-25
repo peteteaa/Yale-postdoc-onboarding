@@ -1,6 +1,9 @@
 'use client'
 
+import { deleteEvent, saveEvent } from '#/app/admin/events/actions'
+import type { EventActionResult } from '#/app/admin/events/actions'
 import {
+  BUSY,
   Field,
   GHOST_BUTTON,
   INPUT,
@@ -12,10 +15,9 @@ import type { Status } from '#/components/StatusIcon'
 import { StatusIcon } from '#/components/StatusIcon'
 import type { PhaseId } from '#/data/checklist'
 import { TASKS } from '#/data/checklist'
-import type { EventCategory, EventStatus, PostdocEvent } from '#/data/events'
-import { EVENT_CATEGORIES, SAMPLE_EVENTS } from '#/data/events'
+import type { EventStatus, PostdocEvent } from '#/data/events'
+import { EVENT_CATEGORIES } from '#/data/events'
 import type { PostdocProgress } from '#/data/postdocs'
-import { POSTDOCS, WORKBOOK_MODULES } from '#/data/postdocs'
 import { appliesTo, taskStatus } from '#/lib/checklist'
 import {
   daysBetween,
@@ -24,13 +26,12 @@ import {
   formatTimeRange,
   parseDate,
 } from '#/lib/dates'
+import type { EventForm, EventFormErrors, EventFormField } from '#/lib/events'
+import { BLANK_EVENT_FORM, validateEvent } from '#/lib/events'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { createContext, use, useRef, useState } from 'react'
-import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react'
-
-// TODO: use the real date. Fixed so the page matches the mockup's sample data.
-const TODAY = parseDate('2026-10-11')
+import { useRef, useState, useTransition } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 
 const VIEWS: { href: string; label: string }[] = [
   { href: '/admin/overview', label: 'Completion overview' },
@@ -38,19 +39,12 @@ const VIEWS: { href: string; label: string }[] = [
   { href: '/admin/resources', label: 'Resources' },
 ]
 
-type EventsState = [PostdocEvent[], Dispatch<SetStateAction<PostdocEvent[]>>]
-
-const EventsContext = createContext<EventsState | null>(null)
-
 /** The staff tabs around each admin page. Used by the admin layout. */
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  // Kept in the layout so edits survive switching pages.
-  // TODO: load from and save to the backend
-  const eventsState = useState(SAMPLE_EVENTS)
 
   return (
-    <EventsContext value={eventsState}>
+    <>
       <nav aria-label="Staff pages" className="border-b border-line">
         <ul className="mx-auto flex max-w-page flex-wrap gap-x-7 px-4 md:px-10">
           {VIEWS.map((option) => (
@@ -69,7 +63,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <main className="mx-auto max-w-page px-4 pt-6 pb-12 md:px-10 md:pt-10 md:pb-18">
         {children}
       </main>
-    </EventsContext>
+    </>
   )
 }
 
@@ -86,39 +80,13 @@ const COLUMNS: { label: string; phases: PhaseId[] }[] = [
   },
 ]
 
-// TODO: from the backend. These cover the whole cohort, not just the rows below.
-const COHORT_TOTALS: {
+type CohortTotal = {
   label: string
   value: string
   detail: string
   percent?: number
   warn?: boolean
-}[] = [
-  {
-    label: 'First-day tasks done',
-    value: '96%',
-    detail: '46 of 48 postdocs',
-    percent: 96,
-  },
-  {
-    label: '30-day checklist done',
-    value: '63%',
-    detail: '30 of 48 postdocs',
-    percent: 63,
-  },
-  {
-    label: 'Have an overdue required task',
-    value: '7',
-    detail: 'postdocs, 4 of them international',
-    warn: true,
-  },
-  {
-    label: 'Started the workbook',
-    value: '81%',
-    detail: '39 of 48 postdocs',
-    percent: 81,
-  },
-]
+}
 
 type ColumnProgress = { done: number; total: number; overdue: boolean }
 
@@ -129,22 +97,22 @@ type Row = {
   overdue: boolean
 }
 
-function rowFor(postdoc: PostdocProgress): Row {
+function rowFor(postdoc: PostdocProgress, today: Date): Row {
   const start = parseDate(postdoc.start)
-  const columns = COLUMNS.map((column, i) => {
+  const doneIds = new Set(postdoc.done)
+  const columns = COLUMNS.map((column) => {
     const tasks = TASKS.filter(
       (task) =>
         column.phases.includes(task.phase) && appliesTo(task, postdoc.visa),
     )
     if (tasks.length === 0) return null
-    const done = Math.min(postdoc.checklistDone[i], tasks.length)
     return {
-      done,
+      done: tasks.filter((task) => doneIds.has(task.id)).length,
       total: tasks.length,
       overdue: tasks.some(
-        (task, j) =>
-          taskStatus(task, { start, today: TODAY, done: j < done }).kind ===
-          'overdue',
+        (task) =>
+          taskStatus(task, { start, today, done: doneIds.has(task.id) })
+            .kind === 'overdue',
       ),
     }
   })
@@ -155,19 +123,52 @@ function rowFor(postdoc: PostdocProgress): Row {
   }
 }
 
-const ROWS = POSTDOCS.map(rowFor)
-const DEPARTMENTS = [...new Set(POSTDOCS.map((p) => p.department))].sort()
-// 'YYYY-MM' of each start date, oldest first
-const START_MONTHS = [
-  ...new Set(POSTDOCS.map((p) => p.start.slice(0, 7))),
-].sort()
+const isComplete = (column: ColumnProgress | null) =>
+  column === null || column.done === column.total
+
+/** Totals over every row, so filtering the table doesn't change them. */
+function cohortTotals(rows: Row[]): CohortTotal[] {
+  const count = rows.length
+  const percentCard = (label: string, n: number): CohortTotal =>
+    count === 0
+      ? { label, value: '—', detail: 'No postdocs yet' }
+      : {
+          label,
+          value: `${Math.round((n / count) * 100)}%`,
+          detail: `${n} of ${count} postdocs`,
+          percent: Math.round((n / count) * 100),
+        }
+  const overdue = rows.filter((row) => row.overdue)
+  return [
+    percentCard(
+      'First-day tasks done',
+      rows.filter((row) => isComplete(row.columns[0])).length,
+    ),
+    percentCard(
+      'Checklist done',
+      rows.filter((row) => row.columns.every(isComplete)).length,
+    ),
+    {
+      label: 'Have an overdue required task',
+      value: String(overdue.length),
+      detail: `postdocs, ${overdue.filter((row) => row.postdoc.visa !== 'domestic').length} of them international`,
+      warn: true,
+    },
+    {
+      label: 'Started the workbook',
+      value: '—',
+      detail: 'Not tracked yet',
+    },
+  ]
+}
 
 type Filters = {
   search: string
   department: string
   startMonth: string
   group: 'all' | 'international' | 'domestic'
-  status: 'all' | 'overdue' | 'workbook-not-started'
+  // TODO: add 'workbook-not-started' back once workbook progress is saved.
+  status: 'all' | 'overdue'
 }
 
 const NO_FILTERS: Filters = {
@@ -183,64 +184,87 @@ function matches(row: Row, filters: Filters): boolean {
   const search = filters.search.trim().toLowerCase()
   return (
     (!search ||
-      postdoc.name.toLowerCase().includes(search) ||
-      postdoc.netId.includes(search)) &&
+      postdoc.fullName.toLowerCase().includes(search) ||
+      postdoc.netId.toLowerCase().includes(search)) &&
     (filters.department === 'all' ||
       postdoc.department === filters.department) &&
     (filters.startMonth === 'all' ||
       postdoc.start.startsWith(filters.startMonth)) &&
     (filters.group === 'all' ||
       (filters.group === 'international') === (postdoc.visa !== 'domestic')) &&
-    (filters.status === 'all' ||
-      (filters.status === 'overdue'
-        ? row.overdue
-        : postdoc.workbookModulesDone === 0))
+    (filters.status === 'all' || row.overdue)
   )
 }
 
-export function OverviewView() {
+/**
+ * /admin/overview. `postdocs` comes from Supabase (null if it couldn’t be
+ * loaded); `today` is 'YYYY-MM-DD' in New Haven.
+ */
+export function OverviewView({
+  postdocs,
+  today,
+}: {
+  postdocs: PostdocProgress[] | null
+  today: string
+}) {
   const [filters, setFilters] = useState(NO_FILTERS)
   const setFilter = <TKey extends keyof Filters>(
     key: TKey,
     value: Filters[TKey],
   ) => setFilters((prev) => ({ ...prev, [key]: value }))
-  const rows = ROWS.filter((row) => matches(row, filters))
+
+  const todayDate = parseDate(today)
+  const allRows = (postdocs ?? []).map((postdoc) => rowFor(postdoc, todayDate))
+  const departments = [...new Set(allRows.map((r) => r.postdoc.department))]
+    .filter(Boolean)
+    .sort()
+  // 'YYYY-MM' of each start date, oldest first
+  const startMonths = [
+    ...new Set(allRows.map((r) => r.postdoc.start.slice(0, 7))),
+  ].sort()
+  const totals = cohortTotals(allRows)
+  const rows = allRows.filter((row) => matches(row, filters))
+
+  const heading = (
+    <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+      <div className="max-w-180">
+        <h1 className="mb-2.5 text-h1 text-yale-blue">Completion overview</h1>
+        <p className="max-w-[65ch] text-lede text-ink-2">
+          Checklist and workbook status for each postdoc. Workbook answers and
+          IDPs are never shown here.
+        </p>
+      </div>
+      {postdocs && (
+        <button
+          type="button"
+          className={GHOST_BUTTON}
+          onClick={() => downloadCsv(rows)}
+        >
+          Export CSV
+        </button>
+      )}
+    </div>
+  )
+
+  if (postdocs === null)
+    return (
+      <>
+        {heading}
+        <p role="alert" className="font-semibold text-late">
+          Couldn’t load postdoc progress. Reload the page to try again.
+        </p>
+      </>
+    )
 
   return (
     <>
-      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-        <div className="max-w-180">
-          <h1 className="mb-2.5 text-h1 text-yale-blue">Completion overview</h1>
-          <p className="max-w-[65ch] text-lede text-ink-2">
-            Checklist and workbook status for each postdoc. Workbook answers and
-            IDPs are never shown here.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <label htmlFor="cohort" className="sr-only">
-            Cohort
-          </label>
-          {/* TODO: load the chosen cohort */}
-          <select id="cohort" className={`${INPUT} w-auto`}>
-            <option>Fall 2026 cohort (48)</option>
-            <option>Summer 2026 cohort (31)</option>
-            <option>All active postdocs (212)</option>
-          </select>
-          <button
-            type="button"
-            className={GHOST_BUTTON}
-            onClick={() => downloadCsv(rows)}
-          >
-            Export CSV
-          </button>
-        </div>
-      </div>
+      {heading}
 
       <ul
         aria-label="Cohort totals"
         className="mb-7.5 grid grid-cols-2 gap-4 md:grid-cols-4"
       >
-        {COHORT_TOTALS.map((total) => (
+        {totals.map((total) => (
           <li
             key={total.label}
             className="rounded border border-card-line bg-paper px-4.5 pt-4.5 pb-4"
@@ -291,7 +315,7 @@ export function OverviewView() {
           onChange={(value) => setFilter('department', value)}
           options={[
             { value: 'all', label: 'All departments' },
-            ...DEPARTMENTS.map((d) => ({ value: d, label: d })),
+            ...departments.map((d) => ({ value: d, label: d })),
           ]}
         />
         <SelectFilter
@@ -301,7 +325,7 @@ export function OverviewView() {
           onChange={(value) => setFilter('startMonth', value)}
           options={[
             { value: 'all', label: 'Any month' },
-            ...START_MONTHS.map((month) => ({
+            ...startMonths.map((month) => ({
               value: month,
               label: formatMonth(parseDate(`${month}-01`)),
             })),
@@ -326,7 +350,6 @@ export function OverviewView() {
           options={[
             { value: 'all', label: 'Any status' },
             { value: 'overdue', label: 'Has an overdue task' },
-            { value: 'workbook-not-started', label: 'Workbook not started' },
           ]}
         />
       </div>
@@ -350,15 +373,19 @@ export function OverviewView() {
             {rows.length > 0 ? (
               rows.map((row) => (
                 <tr
-                  key={row.postdoc.netId}
+                  key={row.postdoc.userId}
                   className="border-b border-line last:border-b-0 hover:bg-wash"
                 >
                   {/* TODO: link to the postdoc detail page */}
                   <th scope="row" className={CELL}>
-                    <span className="font-semibold">{row.postdoc.name}</span>
-                    <span className="block text-micro text-ink-2">
-                      {row.postdoc.netId}
+                    <span className="font-semibold">
+                      {row.postdoc.fullName}
                     </span>
+                    {row.postdoc.netId && (
+                      <span className="block text-micro text-ink-2">
+                        {row.postdoc.netId}
+                      </span>
+                    )}
                   </th>
                   <td className={`${CELL} min-w-37.5`}>
                     {row.postdoc.department}
@@ -372,22 +399,30 @@ export function OverviewView() {
                     </td>
                   ))}
                   <td className={CELL}>
-                    <WorkbookCell done={row.postdoc.workbookModulesDone} />
+                    <span className="text-ink-2">Not tracked yet</span>
                   </td>
-                  <td className={NO_WRAP}>{lastActive(row.postdoc)}</td>
+                  <td className={NO_WRAP}>
+                    {lastActive(row.postdoc, todayDate)}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td colSpan={5 + COLUMNS.length} className={CELL}>
-                  No postdocs match these filters.{' '}
-                  <button
-                    type="button"
-                    onClick={() => setFilters(NO_FILTERS)}
-                    className={`${LINK_BUTTON} text-link`}
-                  >
-                    Clear filters
-                  </button>
+                  {allRows.length === 0 ? (
+                    'No postdocs have added their appointment details yet.'
+                  ) : (
+                    <>
+                      No postdocs match these filters.{' '}
+                      <button
+                        type="button"
+                        onClick={() => setFilters(NO_FILTERS)}
+                        className={`${LINK_BUTTON} text-link`}
+                      >
+                        Clear filters
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             )}
@@ -396,10 +431,9 @@ export function OverviewView() {
       </div>
       <div className="mt-2.5 flex flex-wrap justify-between gap-2.5 text-small text-ink-2">
         <p>
-          {rows.length} shown. Sample data: {POSTDOCS.length} of the 48 postdocs
-          in this cohort.
+          {rows.length} shown of {allRows.length} postdocs.
         </p>
-        <p>Totals above cover the whole cohort.</p>
+        <p>Totals above cover everyone, not just the rows shown.</p>
       </div>
     </>
   )
@@ -494,23 +528,9 @@ function ProgressCell({ progress }: { progress: ColumnProgress | null }) {
   )
 }
 
-function WorkbookCell({ done }: { done: number }) {
-  const status: Status =
-    done === WORKBOOK_MODULES
-      ? 'done'
-      : done > 0
-        ? 'in-progress'
-        : 'not-started'
-  return (
-    <StatusCell status={status}>
-      {done} of {WORKBOOK_MODULES}
-    </StatusCell>
-  )
-}
-
-function lastActive(postdoc: PostdocProgress): string {
+function lastActive(postdoc: PostdocProgress, today: Date): string {
   const date = parseDate(postdoc.lastActive)
-  return daysBetween(date, TODAY) === 0 ? 'Today' : formatDate(date)
+  return daysBetween(date, today) === 0 ? 'Today' : formatDate(date)
 }
 
 /** Downloads the rows as a CSV file, with the same columns as the table. */
@@ -521,11 +541,11 @@ function downloadCsv(rows: Row[]) {
     'Department',
     'Start date',
     ...COLUMNS.map((column) => column.label),
-    'Workbook modules done',
+    'Workbook',
     'Last active',
   ]
   const lines = rows.map(({ postdoc, columns }) => [
-    postdoc.name,
+    postdoc.fullName,
     postdoc.netId,
     postdoc.department,
     postdoc.start,
@@ -534,7 +554,7 @@ function downloadCsv(rows: Row[]) {
         ? `${column.done} of ${column.total}${column.overdue ? ' (overdue)' : ''}`
         : 'N/A',
     ),
-    `${postdoc.workbookModulesDone} of ${WORKBOOK_MODULES}`,
+    'Not tracked',
     postdoc.lastActive,
   ])
   const csv = [header, ...lines]
@@ -556,53 +576,27 @@ function csvField(value: string): string {
 
 /* Manage events */
 
-type EventForm = Omit<PostdocEvent, 'id' | 'category' | 'status'> & {
-  category: EventCategory | ''
-}
-type FormField = keyof EventForm
-type FormErrors = Partial<Record<FormField, string>>
-
-const BLANK_FORM: EventForm = {
-  title: '',
-  date: '',
-  start: '',
-  end: '',
-  location: '',
-  category: '',
-  host: 'Office of Postdoctoral Affairs',
-  description: '',
-  link: '',
-}
-
-function validate(form: EventForm): FormErrors {
-  const errors: FormErrors = {}
-  if (!form.title.trim()) errors.title = 'Add a title.'
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) errors.date = 'Choose a date.'
-  if (!form.start) errors.start = 'Add a start time.'
-  if (form.start && form.end && form.end <= form.start)
-    errors.end = 'End time must be after the start time.'
-  if (!form.category)
-    errors.category = 'Choose a category so postdocs can filter for it.'
-  if (form.link.trim() && !/^https:\/\/\S+\.\S+/.test(form.link.trim()))
-    errors.link = 'Use a full link that starts with https://'
-  return errors
-}
+/** The result of the last save or delete. */
+type Notice = { kind: 'done' | 'failed'; text: string }
 
 const byDate = (a: PostdocEvent, b: PostdocEvent) =>
   (a.date + a.start).localeCompare(b.date + b.start)
 
-export function EventsView() {
-  const eventsState = use(EventsContext)
-  if (!eventsState) throw new Error('EventsView must be inside AdminShell')
-  const [events, setEvents] = eventsState
-  const [form, setForm] = useState(BLANK_FORM)
-  const [errors, setErrors] = useState<FormErrors>({})
+/**
+ * /admin/events. `events` comes from Supabase (null if it couldn't be
+ * loaded); saving or deleting reloads it from the server.
+ */
+export function EventsView({ events }: { events: PostdocEvent[] | null }) {
+  const [form, setForm] = useState(BLANK_EVENT_FORM)
+  const [errors, setErrors] = useState<EventFormErrors>({})
   // The event being edited, or null when the form makes a new one.
   const [editingId, setEditingId] = useState<string | null>(null)
   // The event whose delete is waiting for confirmation.
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   // Result of the last action, read out by screen readers.
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState<Notice | null>(null)
+  // A save or delete is on its way to Supabase.
+  const [saving, startSaving] = useTransition()
   const titleRef = useRef<HTMLInputElement>(null)
 
   const startForm = (values: EventForm, id: string | null) => {
@@ -615,11 +609,27 @@ export function EventsView() {
   const edit = ({ id, category, ...rest }: PostdocEvent) =>
     startForm({ ...rest, category }, id)
 
+  /** Shows the errors and focuses the first. Returns whether there were any. */
+  const showErrors = (found: EventFormErrors) => {
+    setErrors(found)
+    const firstError = Object.keys(found)[0]
+    if (firstError) document.getElementById(`event-${firstError}`)?.focus()
+    return Boolean(firstError)
+  }
+
+  const failed = (result: Extract<EventActionResult, { ok: false }>) => {
+    if (result.errors) showErrors(result.errors)
+    setNotice(result.message ? { kind: 'failed', text: result.message } : null)
+  }
+
   const remove = (event: PostdocEvent) => {
-    setEvents((prev) => prev.filter((e) => e.id !== event.id))
-    setConfirmingId(null)
-    if (editingId === event.id) startForm(BLANK_FORM, null)
-    setNotice(`Deleted “${event.title}.”`)
+    startSaving(async () => {
+      const result = await deleteEvent(event.id)
+      setConfirmingId(null)
+      if (!result.ok) return failed(result)
+      if (editingId === event.id) startForm(BLANK_EVENT_FORM, null)
+      setNotice({ kind: 'done', text: `Deleted “${event.title}.”` })
+    })
   }
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
@@ -627,40 +637,28 @@ export function EventsView() {
     const submitter = (e.nativeEvent as SubmitEvent).submitter
     const status: EventStatus =
       submitter?.dataset.status === 'draft' ? 'draft' : 'published'
-    const found = validate(form)
-    setErrors(found)
-    const firstError = Object.keys(found)[0]
-    if (firstError) {
-      document.getElementById(`event-${firstError}`)?.focus()
-      return
-    }
-    const event: PostdocEvent = {
-      ...form,
-      id: editingId ?? crypto.randomUUID(),
-      title: form.title.trim(),
-      link: form.link.trim(),
-      category: form.category as EventCategory,
-      status,
-    }
-    setEvents((prev) =>
-      editingId
-        ? prev.map((existing) => (existing.id === editingId ? event : existing))
-        : [...prev, event],
-    )
-    setForm(BLANK_FORM)
-    setEditingId(null)
-    setNotice(
-      status === 'published'
-        ? `Published “${event.title}.” Postdocs can see it on Events & programs now.`
-        : `Saved “${event.title}” as a draft. Postdocs can’t see it yet.`,
-    )
+    if (showErrors(validateEvent(form))) return
+    const title = form.title.trim()
+    startSaving(async () => {
+      const result = await saveEvent(editingId, form, status)
+      if (!result.ok) return failed(result)
+      setForm(BLANK_EVENT_FORM)
+      setEditingId(null)
+      setNotice({
+        kind: 'done',
+        text:
+          status === 'published'
+            ? `Published “${title}.” Postdocs can see it on Events & programs now.`
+            : `Saved “${title}” as a draft. Postdocs can’t see it yet.`,
+      })
+    })
   }
 
-  const field = (key: FormField) => ({
+  const field = (key: EventFormField) => ({
     id: `event-${key}`,
     error: errors[key],
   })
-  const setField = (key: FormField, value: string) =>
+  const setField = (key: EventFormField, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
   return (
@@ -676,16 +674,23 @@ export function EventsView() {
         <button
           type="button"
           className={PRIMARY_BUTTON}
-          onClick={() => startForm(BLANK_FORM, null)}
+          onClick={() => startForm(BLANK_EVENT_FORM, null)}
         >
           New event
         </button>
       </div>
 
       <div role="status">
-        {notice && (
+        {notice?.kind === 'done' && (
           <p className="mb-5 rounded bg-tint px-4 py-3 text-small text-tint-ink">
-            {notice}
+            {notice.text}
+          </p>
+        )}
+      </div>
+      <div role="alert">
+        {notice?.kind === 'failed' && (
+          <p className="mb-5 rounded border-[1.5px] border-late bg-paper px-4 py-3 text-small font-semibold text-late">
+            {notice.text}
           </p>
         )}
       </div>
@@ -705,14 +710,21 @@ export function EventsView() {
               </tr>
             </thead>
             <tbody>
-              {events.length === 0 && (
+              {events?.length === 0 && (
                 <tr>
                   <td colSpan={4} className={CELL}>
                     No events yet.
                   </td>
                 </tr>
               )}
-              {[...events].sort(byDate).map((event) =>
+              {events === null && (
+                <tr>
+                  <td colSpan={4} className={`${CELL} text-late`}>
+                    Couldn’t load events. Reload the page to try again.
+                  </td>
+                </tr>
+              )}
+              {[...(events ?? [])].sort(byDate).map((event) =>
                 event.id === confirmingId ? (
                   <tr
                     key={event.id}
@@ -730,7 +742,8 @@ export function EventsView() {
                         <button
                           type="button"
                           onClick={() => remove(event)}
-                          className="inline-flex min-h-9 cursor-pointer items-center rounded border-[1.5px] border-late bg-late px-3 py-1.5 text-small font-semibold text-paper"
+                          disabled={saving}
+                          className={`inline-flex min-h-9 cursor-pointer items-center rounded border-[1.5px] border-late bg-late px-3 py-1.5 text-small font-semibold text-paper ${BUSY}`}
                         >
                           Delete event
                         </button>
@@ -923,21 +936,23 @@ export function EventsView() {
               <button
                 type="submit"
                 data-status="published"
-                className={PRIMARY_BUTTON}
+                disabled={saving}
+                className={`${PRIMARY_BUTTON} ${BUSY}`}
               >
                 Publish
               </button>
               <button
                 type="submit"
                 data-status="draft"
-                className={GHOST_BUTTON}
+                disabled={saving}
+                className={`${GHOST_BUTTON} ${BUSY}`}
               >
                 Save as draft
               </button>
               {editingId && (
                 <button
                   type="button"
-                  onClick={() => startForm(BLANK_FORM, null)}
+                  onClick={() => startForm(BLANK_EVENT_FORM, null)}
                   className={`${LINK_BUTTON} text-link`}
                 >
                   Cancel

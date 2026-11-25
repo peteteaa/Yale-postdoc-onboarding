@@ -9,27 +9,10 @@ import { PHASES, TASKS } from '#/data/checklist'
 import type { TaskStatus } from '#/lib/checklist'
 import { appliesTo, taskStatus } from '#/lib/checklist'
 import { formatDate, parseDate } from '#/lib/dates'
+import type { MyChecklist } from '#/lib/supabase/progress'
+import { useChecklistProgress } from '#/lib/use-checklist-progress'
+import Link from 'next/link'
 import { useState } from 'react'
-
-// TODO: from the signed-in postdoc's profile and saved progress
-const START_DATE = parseDate('2026-09-01')
-const VISA: Visa = 'j1'
-const INITIALLY_DONE = [
-  'i9-form',
-  'i9-documents',
-  'netid',
-  'id-card',
-  'first-meetings',
-  'trainings',
-  'benefits',
-  'vaccines',
-  'oiss-orientation',
-  'oiss-check-in',
-  'ssn-apply',
-  'tax-office',
-]
-// TODO: use the real date. Fixed so the page matches the mockup's sample data.
-const TODAY = parseDate('2026-10-11')
 
 const VISA_NOTE: Record<Visa, string> = {
   j1: "Shown because your profile says you're a J-1 scholar.",
@@ -48,28 +31,30 @@ const FILTERS: { value: Filter; label: string }[] = [
 
 type Row = { task: ChecklistTask; status: TaskStatus }
 
-export function Checklist() {
-  // Ids of the tasks that are checked off.
-  // TODO: save to the backend instead of keeping it in memory
-  const [done, setDone] = useState(() => new Set(INITIALLY_DONE))
+export function Checklist({
+  start: startIso,
+  visa,
+  done: initiallyDone,
+  unsaved,
+  today: todayIso,
+}: MyChecklist & {
+  /** 'YYYY-MM-DD' */
+  today: string
+}) {
+  const start = parseDate(startIso)
+  const today = parseDate(todayIso)
+  const { done, mark, error } = useChecklistProgress(
+    initiallyDone,
+    unsaved === null,
+  )
   const [filter, setFilter] = useState<Filter>('all')
 
-  const toggle = (id: string) =>
-    setDone((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  const toggle = (id: string) => mark(id, !done.has(id))
 
-  const rows: Row[] = TASKS.filter((task) => appliesTo(task, VISA)).map(
+  const rows: Row[] = TASKS.filter((task) => appliesTo(task, visa)).map(
     (task) => ({
       task,
-      status: taskStatus(task, {
-        start: START_DATE,
-        today: TODAY,
-        done: done.has(task.id),
-      }),
+      status: taskStatus(task, { start, today, done: done.has(task.id) }),
     }),
   )
   const doneCount = rows.filter((row) => row.status.kind === 'done').length
@@ -97,6 +82,8 @@ export function Checklist() {
             ? 'Nothing is overdue.'
             : `${overdueCount} required ${overdueCount === 1 ? 'task is' : 'tasks are'} overdue.`}
         </p>
+        <UnsavedNote reason={unsaved} />
+        <SaveError message={error} />
       </div>
 
       <div className="mb-7 flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
@@ -107,8 +94,8 @@ export function Checklist() {
           onChange={setFilter}
         />
         <p className="text-small text-ink-2">
-          Due dates are based on your start date, {formatDate(START_DATE, true)}
-          .
+          Due dates are based on your start date, {formatDate(start, true)}.{' '}
+          <Link href="/settings#appointment">Change it in Settings</Link>.
         </p>
       </div>
 
@@ -128,8 +115,8 @@ export function Checklist() {
           <div className="mt-11 mb-5.5 rounded bg-wash px-6 py-5">
             <h2 className="mb-3 text-h2">International scholars</h2>
             <p className="text-small text-ink-2">
-              {VISA_NOTE[VISA]} {/* TODO: link to Settings */}
-              <a href="#">Change this in Settings</a>.
+              {VISA_NOTE[visa]}{' '}
+              <Link href="/settings#appointment">Change this in Settings</Link>.
             </p>
           </div>
           {international.map(({ phase, rows: phaseRows }) => (
@@ -250,6 +237,39 @@ function TaskItem({ task, status, onToggle }: Row & { onToggle: () => void }) {
         )}
       </div>
     </li>
+  )
+}
+
+/** Why tasks checked off on this page aren't saved. Nothing when they are. */
+export function UnsavedNote({ reason }: { reason: MyChecklist['unsaved'] }) {
+  if (!reason) return null
+  return (
+    <p className="mt-3 max-w-[65ch] text-small text-ink-2">
+      {reason === 'guest' ? (
+        'You’re using a guest account, so tasks you check off aren’t saved. Sign out and create an account to keep your progress.'
+      ) : reason === 'no-profile' ? (
+        <>
+          Tasks you check off aren’t saved until you{' '}
+          <Link href="/settings#appointment">add your appointment</Link>. Due
+          dates below use a sample start date.
+        </>
+      ) : (
+        'Couldn’t load your saved progress, so changes here won’t be saved. Reload the page to try again.'
+      )}
+    </p>
+  )
+}
+
+/** Shown when checking a task off didn't save. */
+export function SaveError({ message }: { message: string | null }) {
+  // Always rendered, so screen readers announce the message when it appears.
+  return (
+    <p
+      role="alert"
+      className="mt-3 text-small font-semibold text-late empty:hidden"
+    >
+      {message}
+    </p>
   )
 }
 
